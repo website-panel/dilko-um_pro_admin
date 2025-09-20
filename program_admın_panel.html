@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YDT Öğretmen Paneli</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
+        .sidebar-link.active { background-color: #eef2ff; color: #4f46e5; font-weight: 600; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        aside { transition: transform 0.3s ease-in-out; }
+        .task-item.completed span { text-decoration: line-through; color: #6b7280; }
+        .task-item.completed svg { color: #10b981; }
+    </style>
+</head>
+<body class="relative">
+    
+    <div id="student-progress-modal" class="hidden fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6 max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center mb-4 border-b pb-3">
+                <h3 class="text-xl font-bold text-gray-800" id="modal-student-name">Öğrenci İlerlemesi</h3>
+                <button id="close-progress-modal" type="button" class="p-1 rounded-full text-gray-400 hover:bg-gray-200 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div id="modal-program-details" class="overflow-y-auto">
+                </div>
+        </div>
+    </div>
+
+    <div id="delete-student-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
+            <h3 class="text-xl font-bold text-gray-800 mb-2">Öğrenciyi Sil</h3>
+            <p class="text-gray-600">
+                <strong id="student-name-to-delete" class="font-bold"></strong> adlı öğrenciyi ve tüm verilerini kalıcı olarak silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.
+            </p>
+            <div class="mt-6 flex justify-end gap-3">
+                <button id="cancel-delete-student" type="button" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300">İptal</button>
+                <button id="confirm-delete-student" type="button" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">Evet, Sil</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="flex">
+        <aside id="sidebar" class="w-64 bg-white shadow-md flex-col p-4 fixed h-full z-40 md:flex -translate-x-full md:translate-x-0">
+            <div class="flex items-center justify-between gap-3 mb-8 px-2">
+                 <div class="flex items-center gap-3">
+                    <div class="bg-indigo-600 p-2 rounded-lg"><svg class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v11.494m-9-5.747h18"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 6.75h4.5M9.75 17.25h4.5M3 12c0-4.97 4.03-9 9-9s9 4.03 9 9-4.03 9-9 9-9-4.03-9-9z"/></svg></div>
+                    <h1 class="text-2xl font-bold text-gray-800">YDT Paneli</h1>
+                 </div>
+                 <button id="close-sidebar-btn" class="md:hidden text-gray-500 hover:text-gray-800">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                 </button>
+            </div>
+            <nav class="flex flex-col gap-2">
+                <a href="#ozet" class="sidebar-link flex items-center gap-3 text-gray-600 hover:bg-slate-100 px-4 py-2.5 rounded-lg transition-colors"><svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg><span>Özet</span></a>
+                <a href="#ogrenciler" class="sidebar-link flex items-center gap-3 text-gray-600 hover:bg-slate-100 px-4 py-2.5 rounded-lg transition-colors"><svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283-.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg><span>Öğrenciler</span></a>
+                <a href="#program-olustur" class="sidebar-link flex items-center gap-3 text-gray-600 hover:bg-slate-100 px-4 py-2.5 rounded-lg transition-colors"><svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg><span>Program Oluştur</span></a>
+            </nav>
+        </aside>
+
+        <main class="flex-1 p-4 sm:p-6 md:ml-64">
+            <header class="md:hidden flex items-center justify-between mb-4">
+                 <h1 class="text-xl font-bold text-gray-800">YDT Paneli</h1>
+                 <button id="open-sidebar-btn" class="p-2">
+                     <svg class="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                 </button>
+            </header>
+            
+            <div id="ozet" class="tab-content">
+                <header class="mb-8"><h2 class="text-2xl md:text-3xl font-bold text-gray-900">Genel Bakış</h2><p class="text-gray-500 mt-1">Sınıfınızın genel durumunu görüntüleyin.</p></header>
+                <div id="stats-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8"></div>
+                <div class="bg-white p-4 sm:p-6 rounded-xl shadow-sm"><h3 class="text-xl font-semibold text-gray-800 mb-4">Öğrenci Listesi</h3><div id="student-progress-container" class="space-y-4"></div></div>
+            </div>
+
+            <div id="ogrenciler" class="tab-content">
+                 <header class="mb-6">
+                    <h2 class="text-2xl md:text-3xl font-bold text-gray-900">Öğrenci Yönetimi</h2>
+                    <p class="text-gray-500 mt-1">Kayıtlı öğrencilerinizi ve ilerlemelerini görüntüleyin.</p>
+                 </header>
+                <div class="bg-white rounded-xl shadow-sm overflow-x-auto">
+                    <table class="min-w-full divide-y divide-slate-200">
+                        <thead class="bg-slate-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Öğrenci</th>
+                                <th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">İlerleme</th>
+                                <th class="px-6 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">İşlemler</th>
+                            </tr>
+                        </thead>
+                        <tbody id="students-table-body" class="bg-white divide-y divide-slate-200"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="program-olustur" class="tab-content">
+                <header class="mb-8"><h2 class="text-2xl md:text-3xl font-bold text-gray-900">Yeni Program Oluştur</h2><p class="text-gray-500 mt-1">Öğrenci için hedefler belirleyin.</p></header>
+                <div class="bg-white p-4 sm:p-8 rounded-xl shadow-sm">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 border-b border-slate-200 pb-8">
+                        <div><label for="student-select" class="block text-sm font-medium text-gray-700 mb-2">Öğrenci Seçimi</label><select id="student-select" class="w-full bg-slate-50 border-slate-300 text-gray-900 rounded-lg p-2.5"></select></div>
+                        <div><label for="week-input" class="block text-sm font-medium text-gray-700 mb-2">Program Haftası</label><input type="text" id="week-input" class="w-full bg-slate-50 border-slate-300 rounded-lg p-2.5" placeholder="Örn: 17. Hafta"></div>
+                    </div>
+                    <div id="tasks-creator-container" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6"></div>
+                    <div class="mt-8 border-t border-slate-200 pt-8"><label for="general-notes" class="block text-sm font-medium text-gray-700 mb-2">Haftalık Genel Notlar</label><textarea id="general-notes" rows="4" class="w-full bg-slate-50 border-slate-300 rounded-lg p-2.5"></textarea></div>
+                    <div class="mt-8 flex justify-end"><button id="send-program-btn" type="button" class="px-6 py-2.5 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700">Programı Gönder</button></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, collection, doc, onSnapshot, getDocs, setDoc, deleteDoc, query, where, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyAimUnNMLeewnDG6Gf1TkoqknYIJbl1Nqw",
+            authDomain: "program-panel.firebaseapp.com",
+            projectId: "program-panel",
+            storageBucket: "program-panel.appspot.com",
+            messagingSenderId: "1012274489744",
+            appId: "1:1012274489744:web:9ab5598ab59f5820ceeb15"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const studentsCol = collection(db, "students");
+        const programsCol = collection(db, "programs");
+        const progressCol = collection(db, "progress");
+
+        document.addEventListener('DOMContentLoaded', () => {
+            let studentList = [];
+            let allPrograms = {};
+            let allProgress = {};
+
+            const progressModal = document.getElementById('student-progress-modal');
+            const deleteModal = document.getElementById('delete-student-modal');
+            const sidebar = document.getElementById('sidebar');
+
+            onSnapshot(studentsCol, () => fetchDataAndRender());
+            onSnapshot(programsCol, () => fetchDataAndRender());
+            onSnapshot(progressCol, () => fetchDataAndRender());
+
+            async function fetchDataAndRender() {
+                const [studentSnapshot, programSnapshot, progressSnapshot] = await Promise.all([
+                    getDocs(studentsCol), getDocs(programsCol), getDocs(progressCol)
+                ]);
+                studentList = studentSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                allPrograms = {};
+                programSnapshot.forEach(doc => { allPrograms[doc.data().studentId] = { id: doc.id, ...doc.data() }; });
+                allProgress = {};
+                progressSnapshot.forEach(doc => { allProgress[doc.id] = doc.data().tasks || {}; });
+                renderAllTabs();
+            }
+
+            document.getElementById('open-sidebar-btn').addEventListener('click', () => sidebar.classList.remove('-translate-x-full'));
+            document.getElementById('close-sidebar-btn').addEventListener('click', () => sidebar.classList.add('-translate-x-full'));
+            document.getElementById('close-progress-modal').addEventListener('click', () => progressModal.classList.add('hidden'));
+            document.getElementById('cancel-delete-student').addEventListener('click', () => deleteModal.classList.add('hidden'));
+
+            function switchTab(hash) {
+                document.querySelectorAll('.sidebar-link').forEach(link => link.classList.toggle('active', link.hash === hash));
+                document.querySelectorAll('.tab-content').forEach(content => content.classList.toggle('active', content.id === hash.substring(1)));
+                if (window.innerWidth < 768) { sidebar.classList.add('-translate-x-full'); }
+            }
+            document.querySelectorAll('.sidebar-link').forEach(link => link.addEventListener('click', e => { e.preventDefault(); window.location.hash = e.currentTarget.hash; switchTab(e.currentTarget.hash); }));
+            
+
+            document.getElementById('confirm-delete-student').addEventListener('click', async () => {
+                const studentIdToDelete = deleteModal.dataset.studentId;
+                if (!studentIdToDelete) return;
+                const batch = writeBatch(db);
+                batch.delete(doc(studentsCol, studentIdToDelete));
+                const program = allPrograms[studentIdToDelete];
+                if (program) {
+                    batch.delete(doc(programsCol, program.id));
+                    batch.delete(doc(progressCol, program.id));
+                }
+                await batch.commit();
+                deleteModal.classList.add('hidden');
+            });
+            
+            function renderStudents() {
+                const tableBody = document.getElementById('students-table-body');
+                if (studentList.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="3" class="text-center text-gray-500 py-10">Listenizde hiç öğrenci yok.</td></tr>`;
+                    return;
+                }
+                tableBody.innerHTML = studentList.map(student => {
+                    const program = allPrograms[student.id];
+                    let progressText = 'Program atanmadı';
+                    if (program) {
+                        const totalTasks = program.tasks.length;
+                        const progressData = allProgress[program.id] || {};
+                        const completedTasks = Object.values(progressData).filter(Boolean).length;
+                        progressText = `${completedTasks} / ${totalTasks} Görev`;
+                    }
+                    return `<tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <button class="text-left w-full view-progress-btn" data-student-id="${student.id}">
+                                <div class="font-medium text-indigo-600 hover:text-indigo-800">${student.name}</div>
+                                <div class="text-sm text-gray-500">${student.email}</div>
+                            </button>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-800 font-semibold">${progressText}</div>
+                            <div class="text-sm text-gray-500">${program?.week || ''}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+                            <button data-student-id="${student.id}" class="assign-program-btn text-indigo-600 hover:text-indigo-900 p-1">Ata</button>
+                            <button data-student-id="${student.id}" data-student-name="${student.name}" class="delete-student-btn text-red-600 hover:text-red-900 p-1">Sil</button>
+                        </td>
+                    </tr>`;
+                }).join('');
+                
+                document.querySelectorAll('.assign-program-btn').forEach(btn => btn.addEventListener('click', e => {
+                    e.stopPropagation();
+                    document.getElementById('student-select').value = e.target.dataset.studentId;
+                    window.location.hash = '#program-olustur'; switchTab('#program-olustur');
+                }));
+                document.querySelectorAll('.delete-student-btn').forEach(btn => btn.addEventListener('click', e => {
+                    e.stopPropagation();
+                    deleteModal.dataset.studentId = e.target.dataset.studentId;
+                    document.getElementById('student-name-to-delete').textContent = e.target.dataset.studentName;
+                    deleteModal.classList.remove('hidden');
+                }));
+                document.querySelectorAll('.view-progress-btn').forEach(btn => btn.addEventListener('click', e => {
+                    showStudentProgress(e.currentTarget.dataset.studentId);
+                }));
+            }
+            
+            function showStudentProgress(studentId) {
+                const student = studentList.find(s => s.id === studentId);
+                const program = allPrograms[studentId];
+                document.getElementById('modal-student-name').textContent = `${student.name} - İlerleme Durumu`;
+                const detailsContainer = document.getElementById('modal-program-details');
+
+                if (!program) {
+                    detailsContainer.innerHTML = '<p class="text-gray-500 text-center p-4">Bu öğrenciye henüz bir program atanmamış.</p>';
+                    progressModal.classList.remove('hidden');
+                    return;
+                }
+                const progressData = allProgress[program.id] || {};
+                detailsContainer.innerHTML = `<h4 class="font-bold text-lg text-indigo-700 mb-4">${program.week} Programı</h4>
+                    <div class="space-y-2">${program.tasks.map(task => {
+                        const isCompleted = progressData[task.title] === true;
+                        return `<div class="task-item ${isCompleted ? 'completed' : ''} flex items-center justify-between p-3 border-b">
+                            <div class="flex items-center"><svg class="w-5 h-5 mr-3 flex-shrink-0 ${isCompleted ? 'text-green-500' : 'text-gray-300'}" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>
+                            <span>${task.title}</span></div>
+                            <span class="text-sm text-gray-500">${task.questions} Soru - ${task.source}</span></div>`;
+                    }).join('')}</div>`;
+                progressModal.classList.remove('hidden');
+}
+
+            function renderProgramCreator() {
+                const tasksDef = [{id:'vocabulary',title:'Vocabulary'},{id:'grammar',title:'Grammar'},{id:'cloze-test',title:'Cloze Test'},{id:'sentence-completion',title:'Sentence Completion'},{id:'paragraph-completion',title:'Paragraph Completion'},{id:'paragraph-test',title:'Paragraph Test'},{id:'situation',title:'Situation'},{id:'dialogue',title:'Dialogue'},{id:'translation',title:'Translation'},{id:'irrelevant-sentence',title:'Anlam Bütünlüğü'},{id:'paraphrasing',title:'Paraphrasing'}];
+                document.getElementById('student-select').innerHTML = '<option value="" selected disabled>Öğrenci seçin...</option>' + studentList.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+                document.getElementById('tasks-creator-container').innerHTML = tasksDef.map(t => `<div class="bg-slate-50 p-4 rounded-xl border"><h3 class="font-semibold text-gray-800 mb-2">${t.title}</h3><div class="space-y-2"><input type="number" id="${t.id}-q" class="w-full bg-white text-sm p-2 rounded-md border-slate-300" placeholder="Soru Sayısı"><input type="text" id="${t.id}-s" class="w-full bg-white text-sm p-2 rounded-md border-slate-300" placeholder="Kaynak"></div></div>`).join('');
+            }
+            
+            document.getElementById('send-program-btn').addEventListener('click', async () => {
+                const studentId = document.getElementById('student-select').value;
+                if (!studentId) return alert('Lütfen bir öğrenci seçin!');
+                const student = studentList.find(s => s.id === studentId);
+                const tasksDef = [{id:'vocabulary',title:'Vocabulary'},{id:'grammar',title:'Grammar'},{id:'cloze-test',title:'Cloze Test'},{id:'sentence-completion',title:'Sentence Completion'},{id:'paragraph-completion',title:'Paragraph Completion'},{id:'paragraph-test',title:'Paragraph Test'},{id:'situation',title:'Situation'},{id:'dialogue',title:'Dialogue'},{id:'translation',title:'Translation'},{id:'irrelevant-sentence',title:'Anlam Bütünlüğü'},{id:'paraphrasing',title:'Paraphrasing'}];
+                const programData = {
+                    studentId, studentName: student.name,
+                    week: document.getElementById('week-input').value || 'Genel',
+                    generalNotes: document.getElementById('general-notes').value,
+                    tasks: tasksDef.map(t => ({ title: t.title, questions: document.getElementById(`${t.id}-q`).value || '0', source: document.getElementById(`${t.id}-s`).value || 'Belirtilmedi' })).filter(t => t.questions !== '0' || t.source !== 'Belirtilmedi')
+                };
+                const existingProgramRef = allPrograms[studentId] ? doc(programsCol, allPrograms[studentId].id) : doc(collection(db, "programs"));
+                await setDoc(existingProgramRef, programData);
+                alert(`${student.name} için program gönderildi!`);
+                window.location.hash = '#ozet'; switchTab('#ozet');
+            });
+
+            function renderAllTabs() {
+                //renderDashboard();
+                renderStudents();
+                renderProgramCreator();
+            }
+            
+            switchTab(window.location.hash || '#ozet');
+            fetchDataAndRender();
+        });
+    </script>
+</body>
+</html>
