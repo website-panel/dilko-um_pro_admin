@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YDT Öğretmen Paneli</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a; /* Slate 900 */
+            color: #e2e8f0; /* Slate 200 */
+            background-image: radial-gradient(circle at top left, rgba(124, 58, 237, 0.1), transparent 40%),
+                              radial-gradient(circle at bottom right, rgba(29, 78, 216, 0.1), transparent 40%);
+        }
+
+        /* Aktif link ve tab stilleri */
+        .sidebar-link.active { background-color: #312e81; color: #ffffff; font-weight: 600; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.5s ease-out; }
+
+        /* Animasyonlar */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        aside { transition: transform 0.3s ease-in-out; }
+        .task-item.completed span { text-decoration: line-through; color: #64748b; }
+
+        /* Buton yüklenme durumu */
+        .btn-loading .btn-text { opacity: 0; }
+        .btn-loading .spinner { opacity: 1; }
+        .spinner { opacity: 0; transition: opacity 0.2s; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+
+        /* Toast bildirimleri */
+        #toast {
+            position: fixed;
+            bottom: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            transition: bottom 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+            z-index: 999;
+        }
+        #toast.show { bottom: 30px; }
+    </style>
+</head>
+<body class="relative">
+
+    <div id="student-progress-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-800 border border-slate-700 rounded-xl shadow-2xl w-full max-w-2xl p-6 max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center mb-4 border-b border-slate-700 pb-3">
+                <h3 class="text-xl font-bold text-white" id="modal-student-name">Öğrenci İlerlemesi</h3>
+                <button id="close-progress-modal" type="button" class="p-1 rounded-full text-slate-400 hover:bg-slate-700 hover:text-white">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div id="modal-program-details" class="overflow-y-auto"></div>
+        </div>
+    </div>
+
+    <div id="delete-student-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-800 border border-slate-700 rounded-xl shadow-2xl w-full max-w-md p-6">
+            <h3 class="text-xl font-bold text-white mb-2">Öğrenciyi Sil</h3>
+            <p class="text-slate-400">
+                <strong id="student-name-to-delete" class="font-bold text-red-400"></strong> adlı öğrenciyi ve tüm verilerini kalıcı olarak silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.
+            </p>
+            <div class="mt-6 flex justify-end gap-3">
+                <button id="cancel-delete-student" type="button" class="px-4 py-2 bg-slate-600 text-slate-200 rounded-lg hover:bg-slate-500">İptal</button>
+                <button id="confirm-delete-student" type="button" class="relative px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+                    <span class="btn-text">Evet, Sil</span>
+                    <span class="spinner"><svg class="animate-spin h-5 w-5" xmlns="http://www.w.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg></span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="flex min-h-screen">
+        <aside id="sidebar" class="w-64 bg-slate-800/80 backdrop-blur-sm border-r border-slate-700 flex-col p-4 fixed h-full z-40 md:flex -translate-x-full md:translate-x-0">
+            <div class="flex items-center justify-between gap-3 mb-8 px-2">
+                <div class="flex items-center gap-3">
+                    <div class="bg-indigo-600 p-2 rounded-lg"><svg class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v11.494m-9-5.747h18"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 6.75h4.5M9.75 17.25h4.5M3 12c0-4.97 4.03-9 9-9s9 4.03 9 9-4.03 9-9 9-9-4.03-9-9z"/></svg></div>
+                    <h1 class="text-2xl font-bold text-white">YDT Paneli</h1>
+                </div>
+                <button id="close-sidebar-btn" class="md:hidden text-slate-400 hover:text-white">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <nav class="flex flex-col gap-2">
+                <a href="#ozet" class="sidebar-link flex items-center gap-3 text-slate-300 hover:bg-slate-700 px-4 py-2.5 rounded-lg transition-colors"><svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg><span>Özet</span></a>
+                <a href="#ogrenciler" class="sidebar-link flex items-center gap-3 text-slate-300 hover:bg-slate-700 px-4 py-2.5 rounded-lg transition-colors"><svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283-.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg><span>Öğrenciler</span></a>
+                <a href="#program-olustur" class="sidebar-link flex items-center gap-3 text-slate-300 hover:bg-slate-700 px-4 py-2.5 rounded-lg transition-colors"><svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg><span>Program Oluştur</span></a>
+            </nav>
+        </aside>
+
+        <main class="flex-1 p-4 sm:p-6 md:ml-64">
+            <header class="md:hidden flex items-center justify-between mb-4">
+                <h1 class="text-xl font-bold text-white">YDT Paneli</h1>
+                <button id="open-sidebar-btn" class="p-2 text-slate-300">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                </button>
+            </header>
+
+            <div id="ozet" class="tab-content">
+                <header class="mb-8"><h2 class="text-2xl md:text-3xl font-bold text-white">Genel Bakış</h2><p class="text-slate-400 mt-1">Sınıfınızın genel durumunu ve istatistikleri görüntüleyin.</p></header>
+                <div id="stats-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8"></div>
+                <div class="bg-slate-800/50 border border-slate-700 p-4 sm:p-6 rounded-xl shadow-sm">
+                    <h3 class="text-xl font-semibold text-white mb-4">Öğrenci İlerleme Durumları</h3>
+                    <div id="student-progress-container" class="space-y-4"></div>
+                </div>
+            </div>
+
+            <div id="ogrenciler" class="tab-content">
+                <header class="mb-6"><h2 class="text-2xl md:text-3xl font-bold text-white">Öğrenci Yönetimi</h2><p class="text-slate-400 mt-1">Kayıtlı öğrencilerinizi ve ilerlemelerini yönetin.</p></header>
+                <div id="students-card-view" class="space-y-4 md:hidden"></div>
+                <div class="hidden md:block bg-slate-800/50 border border-slate-700 rounded-xl shadow-sm overflow-x-auto">
+                    <table class="min-w-full divide-y divide-slate-700">
+                        <thead class="bg-slate-800"><tr class="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                            <th class="px-6 py-3">Öğrenci</th><th class="px-6 py-3">Son Program</th><th class="px-6 py-3 text-right">İşlemler</th>
+                        </tr></thead>
+                        <tbody id="students-table-body" class="divide-y divide-slate-700"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="program-olustur" class="tab-content">
+                <header class="mb-8"><h2 class="text-2xl md:text-3xl font-bold text-white">Yeni Program Oluştur</h2><p class="text-slate-400 mt-1">Öğrenciniz için haftalık hedefler ve notlar belirleyin.</p></header>
+                <div class="bg-slate-800/50 border border-slate-700 p-4 sm:p-8 rounded-xl shadow-sm">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <div class="lg:col-span-1 space-y-6">
+                            <div><label for="student-select" class="block text-sm font-medium text-slate-300 mb-2">Öğrenci Seçimi</label><select id="student-select" class="w-full bg-slate-700 border-slate-600 text-white rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500"></select></div>
+                            <div><label for="week-input" class="block text-sm font-medium text-slate-300 mb-2">Program Haftası</label><input type="text" id="week-input" class="w-full bg-slate-700 border-slate-600 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500" placeholder="Örn: 17. Hafta"></div>
+                            <div><label for="general-notes" class="block text-sm font-medium text-slate-300 mb-2">Haftalık Genel Notlar</label><textarea id="general-notes" rows="8" class="w-full bg-slate-700 border-slate-600 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500" placeholder="Öğrenciye özel motivasyon veya hatırlatma notları..."></textarea></div>
+                            <button id="send-program-btn" type="button" class="relative w-full px-6 py-3 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-900/20">
+                                <span class="btn-text">Programı Gönder</span>
+                                <span class="spinner"><svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg></span>
+                            </button>
+                        </div>
+                        <div id="tasks-creator-container" class="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 auto-rows-min"></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <div id="toast" class="px-6 py-3 rounded-lg shadow-2xl font-semibold"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, collection, doc, onSnapshot, getDocs, setDoc, deleteDoc, query, where, writeBatch, Timestamp, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyAimUnNMLeewnDG6Gf1TkoqknYIJbl1Nqw",
+            authDomain: "program-panel.firebaseapp.com",
+            projectId: "program-panel",
+            storageBucket: "program-panel.appspot.com",
+            messagingSenderId: "1012274489744",
+            appId: "1:1012274489744:web:9ab5598ab59f5820ceeb15"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const studentsCol = collection(db, "students");
+        const programsCol = collection(db, "programs");
+        const progressCol = collection(db, "progress");
+
+        document.addEventListener('DOMContentLoaded', () => {
+            let studentList = [];
+            let allPrograms = {}; 
+            let allProgress = {}; 
+
+            const progressModal = document.getElementById('student-progress-modal');
+            const deleteModal = document.getElementById('delete-student-modal');
+            const sidebar = document.getElementById('sidebar');
+            const toast = document.getElementById('toast');
+            let toastTimeout;
+
+            // --- UTILITY FUNCTIONS ---
+            const showToast = (message, type = 'error') => {
+                clearTimeout(toastTimeout);
+                toast.textContent = message;
+                toast.className = `px-6 py-3 rounded-lg shadow-2xl font-semibold ${type === 'error' ? 'bg-red-500 text-white' : 'bg-green-500 text-white'}`;
+                toast.classList.add('show');
+                toastTimeout = setTimeout(() => toast.classList.remove('show'), 4000);
+            };
+
+            const toggleButtonLoading = (btn, isLoading) => {
+                btn.disabled = isLoading;
+                if (isLoading) btn.classList.add('btn-loading');
+                else btn.classList.remove('btn-loading');
+            };
+
+            const switchTab = (hash) => {
+                document.querySelectorAll('.sidebar-link').forEach(link => link.classList.toggle('active', link.hash === hash));
+                document.querySelectorAll('.tab-content').forEach(content => content.classList.toggle('active', content.id === hash.substring(1)));
+                if (window.innerWidth < 768) sidebar.classList.add('-translate-x-full');
+            };
+
+            // --- DATA FETCHING & RENDERING ---
+            const fetchDataAndRender = async () => {
+                const [studentSnapshot, programSnapshot, progressSnapshot] = await Promise.all([
+                    getDocs(query(studentsCol, orderBy("name"))),
+                    getDocs(query(programsCol, orderBy("createdAt", "desc"))),
+                    getDocs(progressCol)
+                ]);
+
+                studentList = studentSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                allPrograms = {};
+                studentList.forEach(s => allPrograms[s.id] = []);
+                programSnapshot.forEach(doc => {
+                    const program = { id: doc.id, ...doc.data() };
+                    if (allPrograms[program.studentId]) {
+                        allPrograms[program.studentId].push(program);
+                    }
+                });
+
+                allProgress = {};
+                progressSnapshot.forEach(doc => { allProgress[doc.id] = doc.data().tasks || {}; });
+
+                renderAllTabs();
+            };
+
+            const renderAllTabs = () => {
+                renderDashboard();
+                renderStudents();
+                renderProgramCreator();
+            };
+
+            onSnapshot(studentsCol, fetchDataAndRender);
+            onSnapshot(programsCol, fetchDataAndRender);
+            onSnapshot(progressCol, fetchDataAndRender);
+
+            // --- EVENT LISTENERS ---
+            document.getElementById('open-sidebar-btn').addEventListener('click', () => sidebar.classList.remove('-translate-x-full'));
+            document.getElementById('close-sidebar-btn').addEventListener('click', () => sidebar.classList.add('-translate-x-full'));
+            document.getElementById('close-progress-modal').addEventListener('click', () => progressModal.classList.add('hidden'));
+            document.getElementById('cancel-delete-student').addEventListener('click', () => deleteModal.classList.add('hidden'));
+            document.querySelectorAll('.sidebar-link').forEach(link => link.addEventListener('click', e => { e.preventDefault(); window.location.hash = e.currentTarget.hash; switchTab(e.currentTarget.hash); }));
+
+            // --- RENDER FUNCTIONS ---
+            function renderDashboard() {
+                 const statsContainer = document.getElementById('stats-container');
+                 const progressContainer = document.getElementById('student-progress-container');
+
+                 const totalStudents = studentList.length;
+                 let totalPrograms = 0;
+                 let totalCompletedTasks = 0;
+                 let totalTasks = 0;
+
+                 Object.values(allPrograms).flat().forEach(program => {
+                    totalPrograms++;
+                    const progress = allProgress[program.id] || {};
+                    totalTasks += program.tasks.length;
+                    totalCompletedTasks += Object.values(progress).filter(Boolean).length;
+                 });
+                 const overallCompletion = totalTasks > 0 ? Math.round((totalCompletedTasks / totalTasks) * 100) : 0;
+
+                 statsContainer.innerHTML = `
+                    <div class="bg-slate-800 p-5 rounded-lg border border-slate-700"><p class="text-sm text-slate-400">Toplam Öğrenci</p><p class="text-3xl font-bold text-white">${totalStudents}</p></div>
+                    <div class="bg-slate-800 p-5 rounded-lg border border-slate-700"><p class="text-sm text-slate-400">Atanan Program</p><p class="text-3xl font-bold text-white">${totalPrograms}</p></div>
+                    <div class="bg-slate-800 p-5 rounded-lg border border-slate-700"><p class="text-sm text-slate-400">Genel Tamamlama</p><p class="text-3xl font-bold text-green-400">${overallCompletion}%</p></div>
+                 `;
+                 
+                 if (studentList.length === 0) {
+                     progressContainer.innerHTML = `<p class="text-center text-slate-400 py-4">İlerleme verisi gösterecek öğrenci bulunmuyor.</p>`;
+                     return;
+                 }
+
+                 progressContainer.innerHTML = studentList.map(student => {
+                     const studentPrograms = allPrograms[student.id];
+                     if (!studentPrograms || studentPrograms.length === 0) return '';
+                     const latestProgram = studentPrograms[0];
+                     const progress = allProgress[latestProgram.id] || {};
+                     const completed = Object.values(progress).filter(Boolean).length;
+                     const total = latestProgram.tasks.length;
+                     const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+                     return `
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <p class="font-semibold text-slate-200">${student.name}</p>
+                                <p class="text-sm font-medium text-indigo-400">${percentage}%</p>
+                            </div>
+                            <div class="w-full bg-slate-700 rounded-full h-2.5"><div class="bg-indigo-600 h-2.5 rounded-full" style="width: ${percentage}%"></div></div>
+                        </div>
+                     `;
+                 }).join('');
+            }
+            
+            function renderStudents() {
+                const tableBody = document.getElementById('students-table-body');
+                const cardView = document.getElementById('students-card-view');
+
+                if (studentList.length === 0) {
+                    const noStudentHTML = `<tr><td colspan="3" class="text-center text-slate-500 py-10">Listenizde hiç öğrenci yok.</td></tr>`;
+                    tableBody.innerHTML = noStudentHTML;
+                    cardView.innerHTML = `<div class="text-center text-slate-500 py-10">Listenizde hiç öğrenci yok.</div>`;
+                    return;
+                }
+
+                let tableHTML = '';
+                let cardHTML = '';
+
+                studentList.forEach(student => {
+                    const programs = allPrograms[student.id];
+                    const latestProgram = (programs && programs.length > 0) ? programs[0] : null;
+                    let progressText = 'Program atanmadı';
+                    if (latestProgram) {
+                        const progress = allProgress[latestProgram.id] || {};
+                        const completed = Object.values(progress).filter(Boolean).length;
+                        progressText = `${completed} / ${latestProgram.tasks.length} Görev (${latestProgram.week})`;
+                    }
+
+                    const actionsHTML = `
+                        <button data-student-id="${student.id}" class="assign-program-btn text-indigo-400 hover:text-indigo-300 p-1 font-semibold">Ata</button>
+                        <button data-student-id="${student.id}" data-student-name="${student.name}" class="delete-student-btn text-red-500 hover:text-red-400 p-1 font-semibold">Sil</button>
+                    `;
+                    
+                    tableHTML += `<tr class="hover:bg-slate-800">
+                        <td class="px-6 py-4"><button class="text-left w-full view-progress-btn" data-student-id="${student.id}">
+                            <div class="font-medium text-indigo-400 hover:text-indigo-300">${student.name}</div>
+                            <div class="text-sm text-slate-400">${student.email}</div>
+                        </button></td>
+                        <td class="px-6 py-4 text-sm text-slate-300">${progressText}</td>
+                        <td class="px-6 py-4 text-right">${actionsHTML}</td>
+                    </tr>`;
+                    
+                    cardHTML += `<div class="bg-slate-800 p-4 rounded-lg border border-slate-700">
+                        <button class="text-left w-full view-progress-btn mb-3" data-student-id="${student.id}">
+                            <p class="font-bold text-lg text-indigo-400">${student.name}</p>
+                            <p class="text-sm text-slate-400">${student.email}</p>
+                        </button>
+                        <div class="border-t border-slate-700 pt-3 flex justify-between items-center">
+                            <p class="text-sm text-slate-300">${progressText}</p>
+                            <div class="space-x-2">${actionsHTML}</div>
+                        </div>
+                    </div>`;
+                });
+
+                tableBody.innerHTML = tableHTML;
+                cardView.innerHTML = cardHTML;
+                attachStudentActionListeners();
+            }
+
+            function attachStudentActionListeners() {
+                 document.querySelectorAll('.assign-program-btn').forEach(btn => btn.addEventListener('click', e => {
+                    e.stopPropagation();
+                    document.getElementById('student-select').value = e.target.dataset.studentId;
+                    window.location.hash = '#program-olustur'; switchTab('#program-olustur');
+                    showToast('Öğrenci program oluşturma sayfasına seçildi.', 'success');
+                }));
+                document.querySelectorAll('.delete-student-btn').forEach(btn => btn.addEventListener('click', e => {
+                    e.stopPropagation();
+                    deleteModal.dataset.studentId = e.target.dataset.studentId;
+                    document.getElementById('student-name-to-delete').textContent = e.target.dataset.studentName;
+                    deleteModal.classList.remove('hidden');
+                }));
+                document.querySelectorAll('.view-progress-btn').forEach(btn => btn.addEventListener('click', e => {
+                    showStudentProgress(e.currentTarget.dataset.studentId);
+                }));
+            }
+
+            function showStudentProgress(studentId) {
+                const student = studentList.find(s => s.id === studentId);
+                const programs = allPrograms[studentId] || [];
+                document.getElementById('modal-student-name').textContent = `${student.name} - Program Geçmişi`;
+                const detailsContainer = document.getElementById('modal-program-details');
+
+                if (programs.length === 0) {
+                    detailsContainer.innerHTML = '<p class="text-slate-400 text-center p-4">Bu öğrenciye henüz bir program atanmamış.</p>';
+                    progressModal.classList.remove('hidden');
+                    return;
+                }
+                
+                detailsContainer.innerHTML = programs.map(program => {
+                    const progressData = allProgress[program.id] || {};
+                    const completed = Object.values(progressData).filter(Boolean).length;
+                    const total = program.tasks.length;
+                    const percentage = total > 0 ? Math.round((completed/total)*100) : 0;
+
+                    return `<div class="mb-6 bg-slate-700/50 p-4 rounded-lg">
+                        <div class="flex justify-between items-center mb-3">
+                            <h4 class="font-bold text-lg text-indigo-400">${program.week}</h4>
+                            <span class="text-sm font-semibold">${completed}/${total} (${percentage}%)</span>
+                        </div>
+                        <div class="space-y-2 text-sm">${program.tasks.map(task => {
+                            const isCompleted = progressData[task.title] === true;
+                            return `<div class="task-item ${isCompleted ? 'completed' : ''} flex items-center justify-between p-2 rounded bg-slate-700">
+                                <div class="flex items-center">
+                                    <svg class="w-5 h-5 mr-3 flex-shrink-0 ${isCompleted ? 'text-green-400' : 'text-slate-500'}" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>
+                                    <span>${task.title}</span>
+                                </div>
+                                <span class="text-xs text-slate-400">${task.questions} Soru - ${task.source}</span>
+                            </div>`;
+                        }).join('')}</div>
+                        ${program.generalNotes ? `<div class="mt-3 text-sm border-t border-slate-600 pt-3 text-slate-300 whitespace-pre-wrap">${program.generalNotes}</div>` : ''}
+                    </div>`;
+                }).join('');
+                progressModal.classList.remove('hidden');
+            }
+
+            const confirmDeleteBtn = document.getElementById('confirm-delete-student');
+            confirmDeleteBtn.addEventListener('click', async () => {
+                const studentIdToDelete = deleteModal.dataset.studentId;
+                if (!studentIdToDelete) return;
+                
+                toggleButtonLoading(confirmDeleteBtn, true);
+                try {
+                    const batch = writeBatch(db);
+                    batch.delete(doc(studentsCol, studentIdToDelete));
+
+                    const q = query(programsCol, where("studentId", "==", studentIdToDelete));
+                    const programsSnapshot = await getDocs(q);
+
+                    programsSnapshot.forEach(programDoc => {
+                        batch.delete(programDoc.ref);
+                        batch.delete(doc(progressCol, programDoc.id));
+                    });
+
+                    await batch.commit();
+                    showToast('Öğrenci ve tüm verileri başarıyla silindi.', 'success');
+                } catch (error) {
+                    console.error("Deletion error:", error);
+                    showToast('Silme işlemi sırasında bir hata oluştu.');
+                } finally {
+                    toggleButtonLoading(confirmDeleteBtn, false);
+                    deleteModal.classList.add('hidden');
+                }
+            });
+
+            // --- PROGRAM CREATOR ---
+            const tasksDef = [{id:'vocabulary',title:'Vocabulary'},{id:'grammar',title:'Grammar'},{id:'cloze-test',title:'Cloze Test'},{id:'sentence-completion',title:'Sentence Completion'},{id:'paragraph-completion',title:'Paragraph Completion'},{id:'paragraph-test',title:'Paragraph Test'},{id:'situation',title:'Situation'},{id:'dialogue',title:'Dialogue'},{id:'translation',title:'Translation'},{id:'irrelevant-sentence',title:'Anlam Bütünlüğü'},{id:'paraphrasing',title:'Paraphrasing'}];
+            
+            function renderProgramCreator() {
+                document.getElementById('student-select').innerHTML = '<option value="" selected disabled>Öğrenci seçin...</option>' + studentList.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+                const creatorContainer = document.getElementById('tasks-creator-container');
+                
+                creatorContainer.innerHTML = tasksDef.map(t => `
+                    <div class="bg-slate-700/50 p-4 rounded-lg border border-slate-700 flex flex-col gap-3">
+                        <label class="font-semibold text-slate-200">${t.title}</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <input type="number" id="${t.id}-q" class="w-full bg-slate-700 text-sm p-2 rounded-md border border-slate-600 placeholder-slate-400" placeholder="Soru Sayısı">
+                            <input type="text" id="${t.id}-s" class="w-full bg-slate-700 text-sm p-2 rounded-md border border-slate-600 placeholder-slate-400" placeholder="Kaynak">
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            const sendProgramBtn = document.getElementById('send-program-btn');
+            sendProgramBtn.addEventListener('click', async () => {
+                const studentId = document.getElementById('student-select').value;
+                const week = document.getElementById('week-input').value;
+                if (!studentId) return showToast('Lütfen bir öğrenci seçin!');
+                if (!week) return showToast('Lütfen program haftasını belirtin!');
+
+                const student = studentList.find(s => s.id === studentId);
+                const programTasks = tasksDef
+                    .map(t => ({ title: t.title, questions: document.getElementById(`${t.id}-q`).value || '0', source: document.getElementById(`${t.id}-s`).value || 'Belirtilmedi' }))
+                    .filter(t => t.questions !== '0' && t.questions !== '');
+
+                if(programTasks.length === 0) return showToast('Lütfen en az bir görev için soru sayısı girin.');
+
+                const programData = {
+                    studentId, studentName: student.name,
+                    week,
+                    generalNotes: document.getElementById('general-notes').value,
+                    tasks: programTasks,
+                    createdAt: Timestamp.now()
+                };
+                
+                toggleButtonLoading(sendProgramBtn, true);
+                try {
+                    const newProgramRef = doc(collection(db, "programs"));
+                    await setDoc(newProgramRef, programData);
+                    showToast(`${student.name} için program başarıyla gönderildi!`, 'success');
+                    // Reset form
+                    document.getElementById('week-input').value = '';
+                    document.getElementById('general-notes').value = '';
+                    tasksDef.forEach(t => {
+                        document.getElementById(`${t.id}-q`).value = '';
+                        document.getElementById(`${t.id}-s`).value = '';
+                    });
+                    window.location.hash = '#ozet'; switchTab('#ozet');
+                } catch (error) {
+                    console.error("Program sending error:", error);
+                    showToast('Program gönderilirken bir hata oluştu.');
+                } finally {
+                    toggleButtonLoading(sendProgramBtn, false);
+                }
+            });
+
+            // --- INITIALIZATION ---
+            switchTab(window.location.hash || '#ozet');
+        });
+    </script>
+</body>
+</html>
