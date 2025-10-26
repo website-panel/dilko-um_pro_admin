@@ -3,493 +3,723 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YDT Öğretmen Paneli</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <title>Öğretmen Paneli</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --primary-color: #0d3d6e; --primary-light: #1a5a96; --primary-lighter: #e7f0f7;
+            --success-color: #28a745; --success-dark: #1e7e34; --success-lighter: #eaf6ec;
+            --danger-color: #d9534f; --danger-dark: #c9302c; --danger-lighter: #fdeded;
+            --warning-color: #f0ad4e; --warning-dark: #ec971f; --warning-lighter: #fff8eb;
+            --info-color: #5bc0de; --info-dark: #31b0d5;
+            --background-color: #f4f7fa; --card-background: #ffffff;
+            --text-color: #333; --text-light: #555;
+            --border-color: #e0e0e0; --shadow: 0 4px 15px rgba(0, 0, 0, 0.07);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: #0f172a; /* Slate 900 */
-            color: #e2e8f0; /* Slate 200 */
-            background-image: radial-gradient(circle at top left, rgba(124, 58, 237, 0.1), transparent 40%),
-                              radial-gradient(circle at bottom right, rgba(29, 78, 216, 0.1), transparent 40%);
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--background-color); color: var(--text-color);
+            line-height: 1.6; padding-bottom: 50px;
+            -webkit-tap-highlight-color: transparent;
         }
-
-        /* Aktif link ve tab stilleri */
-        .sidebar-link.active { background-color: #312e81; color: #ffffff; font-weight: 600; }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; animation: fadeIn 0.5s ease-out; }
-
-        /* Animasyonlar */
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        aside { transition: transform 0.3s ease-in-out; }
-        .task-item.completed span { text-decoration: line-through; color: #64748b; }
-
-        /* Buton yüklenme durumu */
-        .btn-loading .btn-text { opacity: 0; }
-        .btn-loading .spinner { opacity: 1; }
-        .spinner { opacity: 0; transition: opacity 0.2s; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
-
-        /* Toast bildirimleri */
-        #toast {
-            position: fixed;
-            bottom: -100px;
-            left: 50%;
-            transform: translateX(-50%);
-            transition: bottom 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
-            z-index: 999;
+        .top-header {
+            background-color: var(--primary-color); color: white;
+            padding: 20px 15px; box-shadow: var(--shadow);
+            text-align: center;
         }
-        #toast.show { bottom: 30px; }
+        .top-header h1 { font-size: 1.6em; margin: 0; font-weight: 600; }
+        .container {
+            width: 100%; max-width: 1100px; /* Genişletildi */
+            margin: 20px auto; padding: 0 15px;
+        }
+        .card {
+            background-color: var(--card-background);
+            border-radius: 12px; box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+            padding: 25px; margin-bottom: 30px; /* Kartlar arası boşluk arttı */
+        }
+        .card h2 {
+            font-size: 1.4em; /* Biraz büyüdü */
+            font-weight: 600; color: var(--primary-color);
+            padding-bottom: 15px; border-bottom: 1px solid var(--border-color);
+            margin: -25px -25px 25px -25px; /* Alt boşluk arttı */
+            padding: 15px 25px;
+            border-top-left-radius: 12px; border-top-right-radius: 12px;
+            background-color: #f9faff;
+        }
+        .form-group { display: flex; flex-direction: column; margin-bottom: 20px; }
+        .form-group label { font-weight: 600; color: var(--text-light); margin-bottom: 8px; font-size: 0.95em; }
+        .zamanlama-grup { display: flex; gap: 15px; align-items: center; }
+        .zamanlama-grup .form-group { flex: 1; margin-bottom: 0; }
+        .form-group select,
+        .form-group input[type="text"], .form-group input[type="number"],
+        .form-group input[type="date"], .form-group input[type="time"] {
+            width: 100%; padding: 14px 15px; border: 1px solid var(--border-color);
+            border-radius: 8px; font-size: 1em; font-family: 'Poppins', sans-serif;
+            background-color: #fff; -webkit-appearance: none; appearance: none;
+        }
+        .form-group select:focus, .form-group input:focus {
+            outline: none; border-color: var(--primary-light);
+            box-shadow: 0 0 0 3px rgba(26, 90, 150, 0.1);
+        }
+        .assign-button {
+            background-color: var(--success-color); color: white; border: none;
+            border-radius: 8px; padding: 15px 25px; font-size: 1.1em; font-weight: 600;
+            cursor: pointer; transition: background-color 0.2s; margin-top: 10px;
+            width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .assign-button:hover { background-color: var(--success-dark); }
+        .assign-button:disabled { background-color: #ccc; cursor: not-allowed; }
+        .message { padding: 12px 18px; border-radius: 8px; margin-top: 20px; font-size: 0.95em; display: none; border: 1px solid transparent; }
+        .message.success { background-color: var(--success-lighter); color: var(--success-dark); border-color: var(--success-color); }
+        .message.error { background-color: var(--danger-lighter); color: var(--danger-dark); border-color: var(--danger-color); }
+        .loading-indicator { font-size: 0.9em; color: var(--text-light); display: none; margin-left: 10px; }
+        
+        #ogrenci-listesi-konteyner { /* Ödev atama formu için */
+            max-height: 30vh; overflow-y: auto; border: 1px solid var(--border-color);
+            border-radius: 8px; padding: 10px; margin-top: 5px; background-color: #fff;
+            -webkit-overflow-scrolling: touch;
+        }
+        #ogrenci-listesi-konteyner label {
+            display: flex; align-items: center; padding: 12px 15px; cursor: pointer;
+            border-radius: 6px; margin-bottom: 5px; transition: background-color 0.1s;
+        }
+        #ogrenci-listesi-konteyner label:hover { background-color: #f0f0f0; }
+        #ogrenci-listesi-konteyner input[type="radio"] { margin-right: 12px; width: 18px; height: 18px; }
+        #ogrenci-listesi-konteyner label.selected { background-color: var(--primary-light); color: white; font-weight: 500; }
+
+        /* --- YENİ BÖLÜM: Ödev Görüntüleme --- */
+        .goruntuleme-alani { display: flex; gap: 25px; }
+        .ogrenci-listesi-panel { flex: 0 0 300px; /* Sabit genişlik */ }
+        .ogrenci-odevleri-panel { flex: 1; min-width: 0; /* İçeriğin taşmasını önle */ }
+        
+        #goruntuleme-ogrenci-listesi {
+            max-height: 65vh; overflow-y: auto; border: 1px solid var(--border-color);
+            border-radius: 8px; padding: 10px; background-color: #fff;
+            -webkit-overflow-scrolling: touch;
+        }
+        .ogrenci-list-item {
+            display: block; padding: 12px 15px; cursor: pointer; border-radius: 6px;
+            margin-bottom: 5px; transition: background-color 0.1s; font-weight: 500;
+        }
+        .ogrenci-list-item:hover { background-color: var(--primary-lighter); }
+        .ogrenci-list-item.selected { background-color: var(--primary-color); color: white; }
+        
+        #ogrenci-odevleri-icerik { min-height: 100px; /* Yükleniyor yazısı için */ }
+        .odev-tablosu-wrapper { overflow-x: auto; /* Mobilde tablo taşarsa kaydır */ }
+        .odev-tablosu { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        .odev-tablosu th, .odev-tablosu td {
+            padding: 12px 15px; text-align: left; border-bottom: 1px solid var(--border-color);
+            vertical-align: middle;
+        }
+        .odev-tablosu th {
+            background-color: #f8f9fa; font-weight: 600; color: var(--text-light);
+            font-size: 0.9em; text-transform: uppercase; white-space: nowrap;
+        }
+        .odev-tablosu td { font-size: 0.95em; }
+        .odev-tablosu tr:last-child td { border-bottom: none; }
+        .odev-tablosu .actions { text-align: right; white-space: nowrap; }
+        .odev-tablosu .actions button {
+            background: none; border: none; cursor: pointer; padding: 5px; margin-left: 8px;
+            opacity: 0.7; transition: opacity 0.2s, transform 0.2s;
+        }
+        .odev-tablosu .actions button:hover { opacity: 1; transform: scale(1.1); }
+        .odev-tablosu .actions .edit-btn svg { color: var(--primary-light); }
+        .odev-tablosu .actions .delete-btn svg { color: var(--danger-color); }
+        .odev-tablosu .actions svg { width: 18px; height: 18px; display: block; }
+        
+        .status-badge {
+             padding: 4px 10px; font-size: 0.8em; font-weight: 600;
+             border-radius: 15px; white-space: nowrap;
+        }
+        .status-badge.atanmis { background-color: var(--primary-lighter); color: var(--primary-dark); }
+        .status-badge.zamanlanmis { background-color: var(--warning-lighter); color: var(--warning-dark); }
+        .status-badge.tamamlandi { background-color: var(--success-lighter); color: var(--success-dark); }
+        /* --- YENİ BÖLÜM SONU --- */
+
+        @media (min-width: 600px) {
+             .form-grid-layout {
+                 display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: end;
+             }
+             .form-group.full-width { grid-column: 1 / -1; }
+             .assign-button { width: auto; grid-column: 1 / -1; justify-self: start; margin-top: 20px; }
+        }
+         @media (max-width: 850px) { /* Tablet ve altı */
+             .goruntuleme-alani { flex-direction: column; }
+             .ogrenci-listesi-panel { flex: 0 0 auto; /* Yüksekliği içeriğe göre ayarla */ }
+             #goruntuleme-ogrenci-listesi { max-height: 25vh; } /* Yüksekliği azalt */
+         }
+         @media (max-width: 599px) {
+             .zamanlama-grup { flex-direction: column; gap: 0; align-items: stretch; }
+             .zamanlama-grup .form-group { margin-bottom: 20px; }
+             .odev-tablosu th, .odev-tablosu td { padding: 10px 8px; font-size: 0.9em;} /* Mobilde tablo içeriği */
+             .status-badge { padding: 3px 8px; font-size: 0.75em; }
+         }
+        /* --- Modal (Onay Kutusu) Stilleri --- */
+         .modal-overlay { 
+             position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+             background: rgba(0, 0, 0, 0.6); z-index: 1000; 
+             display: flex; justify-content: center; align-items: center; 
+             opacity: 0; visibility: hidden; transition: all 0.3s ease-in-out; 
+         }
+         .modal-overlay.show { opacity: 1; visibility: visible; }
+         .modal-content { 
+             background: white; padding: 30px 40px; border-radius: 12px; 
+             text-align: center; max-width: 90%; width: 450px; user-select: none; 
+         }
+         .modal-content h2 { margin-top: 0; color: var(--danger-dark);}
+         .modal-content p { font-size: 1.1em; margin: 0 0 20px 0; color: var(--text-light); }
+         .modal-buttons { display: flex; gap: 15px; justify-content: center;}
+         .modal-buttons button { 
+             border: none; padding: 12px 30px; border-radius: 8px; 
+             font-size: 1em; font-weight: 500; cursor: pointer; margin-top: 10px; transition: background-color 0.2s;
+         }
+         .modal-buttons .cancel { background-color: #6c757d; color: white; }
+         .modal-buttons .confirm { background-color: var(--danger-color); color: white; }
+         .modal-buttons .cancel:hover { background-color: var(--secondary-dark); }
+         .modal-buttons .confirm:hover { background-color: var(--danger-dark); }
+        /* --- Modal Stilleri Bitiş --- */
     </style>
 </head>
-<body class="relative">
+<body>
 
-    <div id="student-progress-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-slate-800 border border-slate-700 rounded-xl shadow-2xl w-full max-w-2xl p-6 max-h-[90vh] flex flex-col">
-            <div class="flex justify-between items-center mb-4 border-b border-slate-700 pb-3">
-                <h3 class="text-xl font-bold text-white" id="modal-student-name">Öğrenci İlerlemesi</h3>
-                <button id="close-progress-modal" type="button" class="p-1 rounded-full text-slate-400 hover:bg-slate-700 hover:text-white">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
-            </div>
-            <div id="modal-program-details" class="overflow-y-auto"></div>
-        </div>
-    </div>
+    <header class="top-header">
+        <h1>Öğretmen Paneli</h1>
+    </header>
 
-    <div id="delete-student-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-slate-800 border border-slate-700 rounded-xl shadow-2xl w-full max-w-md p-6">
-            <h3 class="text-xl font-bold text-white mb-2">Öğrenciyi Sil</h3>
-            <p class="text-slate-400">
-                <strong id="student-name-to-delete" class="font-bold text-red-400"></strong> adlı öğrenciyi ve tüm verilerini kalıcı olarak silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.
-            </p>
-            <div class="mt-6 flex justify-end gap-3">
-                <button id="cancel-delete-student" type="button" class="px-4 py-2 bg-slate-600 text-slate-200 rounded-lg hover:bg-slate-500">İptal</button>
-                <button id="confirm-delete-student" type="button" class="relative px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
-                    <span class="btn-text">Evet, Sil</span>
-                    <span class="spinner"><svg class="animate-spin h-5 w-5" xmlns="http://www.w.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg></span>
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <div class="flex min-h-screen">
-        <aside id="sidebar" class="w-64 bg-slate-800/80 backdrop-blur-sm border-r border-slate-700 flex-col p-4 fixed h-full z-40 md:flex -translate-x-full md:translate-x-0">
-            <div class="flex items-center justify-between gap-3 mb-8 px-2">
-                <div class="flex items-center gap-3">
-                    <div class="bg-indigo-600 p-2 rounded-lg"><svg class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v11.494m-9-5.747h18"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 6.75h4.5M9.75 17.25h4.5M3 12c0-4.97 4.03-9 9-9s9 4.03 9 9-4.03 9-9 9-9-4.03-9-9z"/></svg></div>
-                    <h1 class="text-2xl font-bold text-white">YDT Paneli</h1>
-                </div>
-                <button id="close-sidebar-btn" class="md:hidden text-slate-400 hover:text-white">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
-            </div>
-            <nav class="flex flex-col gap-2">
-                <a href="#ozet" class="sidebar-link flex items-center gap-3 text-slate-300 hover:bg-slate-700 px-4 py-2.5 rounded-lg transition-colors"><svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg><span>Özet</span></a>
-                <a href="#ogrenciler" class="sidebar-link flex items-center gap-3 text-slate-300 hover:bg-slate-700 px-4 py-2.5 rounded-lg transition-colors"><svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283-.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg><span>Öğrenciler</span></a>
-                <a href="#program-olustur" class="sidebar-link flex items-center gap-3 text-slate-300 hover:bg-slate-700 px-4 py-2.5 rounded-lg transition-colors"><svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg><span>Program Oluştur</span></a>
-            </nav>
-        </aside>
-
-        <main class="flex-1 p-4 sm:p-6 md:ml-64">
-            <header class="md:hidden flex items-center justify-between mb-4">
-                <h1 class="text-xl font-bold text-white">YDT Paneli</h1>
-                <button id="open-sidebar-btn" class="p-2 text-slate-300">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-                </button>
-            </header>
-
-            <div id="ozet" class="tab-content">
-                <header class="mb-8"><h2 class="text-2xl md:text-3xl font-bold text-white">Genel Bakış</h2><p class="text-slate-400 mt-1">Sınıfınızın genel durumunu ve istatistikleri görüntüleyin.</p></header>
-                <div id="stats-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8"></div>
-                <div class="bg-slate-800/50 border border-slate-700 p-4 sm:p-6 rounded-xl shadow-sm">
-                    <h3 class="text-xl font-semibold text-white mb-4">Öğrenci İlerleme Durumları</h3>
-                    <div id="student-progress-container" class="space-y-4"></div>
-                </div>
-            </div>
-
-            <div id="ogrenciler" class="tab-content">
-                <header class="mb-6"><h2 class="text-2xl md:text-3xl font-bold text-white">Öğrenci Yönetimi</h2><p class="text-slate-400 mt-1">Kayıtlı öğrencilerinizi ve ilerlemelerini yönetin.</p></header>
-                <div id="students-card-view" class="space-y-4 md:hidden"></div>
-                <div class="hidden md:block bg-slate-800/50 border border-slate-700 rounded-xl shadow-sm overflow-x-auto">
-                    <table class="min-w-full divide-y divide-slate-700">
-                        <thead class="bg-slate-800"><tr class="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                            <th class="px-6 py-3">Öğrenci</th><th class="px-6 py-3">Son Program</th><th class="px-6 py-3 text-right">İşlemler</th>
-                        </tr></thead>
-                        <tbody id="students-table-body" class="divide-y divide-slate-700"></tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div id="program-olustur" class="tab-content">
-                <header class="mb-8"><h2 class="text-2xl md:text-3xl font-bold text-white">Yeni Program Oluştur</h2><p class="text-slate-400 mt-1">Öğrenciniz için haftalık hedefler ve notlar belirleyin.</p></header>
-                <div class="bg-slate-800/50 border border-slate-700 p-4 sm:p-8 rounded-xl shadow-sm">
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        <div class="lg:col-span-1 space-y-6">
-                            <div><label for="student-select" class="block text-sm font-medium text-slate-300 mb-2">Öğrenci Seçimi</label><select id="student-select" class="w-full bg-slate-700 border-slate-600 text-white rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500"></select></div>
-                            <div><label for="week-input" class="block text-sm font-medium text-slate-300 mb-2">Program Haftası</label><input type="text" id="week-input" class="w-full bg-slate-700 border-slate-600 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500" placeholder="Örn: 17. Hafta"></div>
-                            <div><label for="general-notes" class="block text-sm font-medium text-slate-300 mb-2">Haftalık Genel Notlar</label><textarea id="general-notes" rows="8" class="w-full bg-slate-700 border-slate-600 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500" placeholder="Öğrenciye özel motivasyon veya hatırlatma notları..."></textarea></div>
-                            <button id="send-program-btn" type="button" class="relative w-full px-6 py-3 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-900/20">
-                                <span class="btn-text">Programı Gönder</span>
-                                <span class="spinner"><svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg></span>
-                            </button>
-                        </div>
-                        <div id="tasks-creator-container" class="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 auto-rows-min"></div>
+    <div class="container">
+        <div class="card">
+            <h2>Yeni Ödev Ata</h2>
+            <form id="odev-form">
+                <div class="form-grid-layout">
+                    <div class="form-group full-width">
+                        <label for="ogrenci-secim">Öğrenci Seçin</label>
+                         <div id="ogrenci-listesi-konteyner">
+                             <p id="ogrenci-loading-form">Öğrenciler yükleniyor...</p>
+                         </div>
                     </div>
-                </div>
-            </div>
-        </main>
+                    <div class="form-group">
+                        <label for="odev-baslik">Ödev Başlığı (Opsiyonel)</label>
+                        <input type="text" id="odev-baslik" placeholder="Örn: Haftalık Kelime Testi">
+                    </div>
+                    <div class="form-group">
+                        <label for="kategori-secim">Kategori</label>
+                        <select id="kategori-secim" required>
+                            <option value="" disabled selected>-- Kategori Seçiniz --</option>
+                            <optgroup label="Standart Testler">
+                                <option value="grammar">Grammar</option>
+                                <option value="vocabulary">Vocabulary</option>
+                                <option value="preposition">Preposition</option>
+                                <option value="sentence_completion">Sentence Completion</option>
+                                <option value="paragraph_completion">Paragraph Completion</option>
+                                <option value="situation">Situation</option>
+                                <option value="dialogue">Dialogue</option>
+                                <option value="translations">Translations</option>
+                                <option value="mismatching">Mismatching</option>
+                                <option value="paraphrasing">Paraphrasing</option>
+                            </optgroup>
+                            <optgroup label="Okuma Testleri (Paragraf)">
+                                <option value="advanced_reading">Advanced Reading</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    <div class="form-group" id="soru-sayisi-grup">
+                        <label for="soru-sayisi">Soru Sayısı</label>
+                        <input type="number" id="soru-sayisi" min="1" max="100" required pattern="\d*" inputmode="numeric" placeholder="Örn: 25">
+                    </div>
+
+                    <div class="form-group full-width">
+                         <label>Ödev Ne Zaman Görünsün? (Boş bırakırsanız hemen)</label>
+                         <div class="zamanlama-grup">
+                              <div class="form-group">
+                                   <label for="gorunurluk-tarihi" style="font-size: 0.9em; margin-bottom: 4px;">Tarih</label>
+                                   <input type="date" id="gorunurluk-tarihi">
+                              </div>
+                              <div class="form-group">
+                                    <label for="gorunurluk-saati" style="font-size: 0.9em; margin-bottom: 4px;">Saat</label>
+                                    <input type="time" id="gorunurluk-saati">
+                              </div>
+                         </div>
+                    </div>
+                    <button type="submit" class="assign-button" id="assign-button">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-send-fill" viewBox="0 0 16 16"> <path d="M15.964.686a.5.5 0 0 0-.65-.65L.767 5.855H.766l-.452.18a.5.5 0 0 0-.082.887l.41.26.001.002 4.995 3.178 3.178 4.995.002.002.26.41a.5.5 0 0 0 .886-.083zm-1.833 1.89L6.637 10.07l-.215-.338a.5.5 0 0 0-.154-.154l-.338-.215 7.494-7.494 1.178-.471z"/> </svg>
+                        Ödevi Ata
+                        <span class="loading-indicator" id="assign-loading">Atanıyor...</span>
+                    </button>
+                 </div>
+                 <div class="message" id="form-message"></div>
+            </form>
+        </div>
+
+        <div class="card">
+             <h2>Atanmış Ödevler ve Öğrenci Durumu</h2>
+             <div class="goruntuleme-alani">
+                 <aside class="ogrenci-listesi-panel">
+                     <label>Öğrenci Seçin:</label>
+                     <div id="goruntuleme-ogrenci-listesi">
+                         <p id="ogrenci-loading-view">Öğrenciler yükleniyor...</p>
+                     </div>
+                 </aside>
+                 <main class="ogrenci-odevleri-panel">
+                     <h3 id="secili-ogrenci-adi" style="color: var(--primary-light); margin-bottom: 15px;">Öğrencinin Ödevleri</h3>
+                     <div id="ogrenci-odevleri-icerik">
+                         <p id="odev-listesi-mesaj">Ödevlerini görmek için lütfen listeden bir öğrenci seçin.</p>
+                         <div class="odev-tablosu-wrapper" style="display: none;">
+                            <table class="odev-tablosu" id="odev-tablosu-body">
+                                <thead>
+                                    <tr>
+                                        <th>Başlık</th>
+                                        <th>Kategori</th>
+                                        <th>Durum</th>
+                                        <th>Tarih</th>
+                                        <th>Sonuç</th>
+                                        <th class="actions">İşlemler</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    </tbody>
+                            </table>
+                         </div>
+                         <p id="odev-listesi-bos" style="display: none; color: var(--text-light); margin-top: 15px;">Bu öğrenciye atanmış ödev bulunmuyor.</p>
+                     </div>
+                 </main>
+             </div>
+        </div>
+
     </div>
-    
-    <div id="toast" class="px-6 py-3 rounded-lg shadow-2xl font-semibold"></div>
+
+     <div id="onay-popup" class="modal-overlay">
+         <div class="modal-content">
+             <h2>Emin misiniz?</h2>
+             <p id="onay-mesaji">Bu işlem geri alınamaz.</p>
+             <div class="modal-buttons">
+                 <button id="onay-iptal-btn" class="cancel">İptal</button>
+                 <button id="onay-devam-btn" class="confirm">Evet</button>
+             </div>
+         </div>
+     </div>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFirestore, collection, doc, onSnapshot, getDocs, setDoc, deleteDoc, query, where, writeBatch, Timestamp, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-        
-        const firebaseConfig = {
-            apiKey: "AIzaSyAimUnNMLeewnDG6Gf1TkoqknYIJbl1Nqw",
-            authDomain: "program-panel.firebaseapp.com",
-            projectId: "program-panel",
-            storageBucket: "program-panel.appspot.com",
-            messagingSenderId: "1012274489744",
-            appId: "1:1012274489744:web:9ab5598ab59f5820ceeb15"
-        };
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+        // --- YENİ: Timestamp, updateDoc, deleteDoc eklendi ---
+        import { getFirestore, collection, doc, getDocs, addDoc, serverTimestamp, Timestamp, query, orderBy, updateDoc, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+
+        const firebaseConfig = { apiKey: "AIzaSyAvaEaHtTwcuCDBIggJGd4w_nzJQM5UlmY", authDomain: "teacher-adminpanel.firebaseapp.com", projectId: "teacher-adminpanel", storageBucket: "teacher-adminpanel.appspot.com", messagingSenderId: "901735644134", appId: "1:901735644134:web:a6aa575a0754de1333f427", measurementId: "G-68BWZJYCK9" };
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        const studentsCol = collection(db, "students");
-        const programsCol = collection(db, "programs");
-        const progressCol = collection(db, "progress");
+        const readingKategorileri = ['advanced_reading', 'paragraph_test', 'cloze_test'];
+        // --- YENİ: Tarih ve Saat formatlayıcı ---
+        const dateTimeFormatter = new Intl.DateTimeFormat('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        const dateFormatter = new Intl.DateTimeFormat('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+        let seciliOgrenciId = null; // Görüntüleme bölümünde seçili olan öğrenci
 
         document.addEventListener('DOMContentLoaded', () => {
-            let studentList = [];
-            let allPrograms = {}; 
-            let allProgress = {}; 
+              // --- Form Elementleri ---
+              const odevForm = document.getElementById('odev-form');
+              const assignButton = document.getElementById('assign-button');
+              const formMessageDiv = document.getElementById('form-message');
+              const assignLoading = document.getElementById('assign-loading');
+              const ogrenciListesiKonteyner = document.getElementById('ogrenci-listesi-konteyner');
+              const kategoriSelect = document.getElementById('kategori-secim');
+              const soruSayisiGrup = document.getElementById('soru-sayisi-grup');
+              const soruSayisiInput = document.getElementById('soru-sayisi');
+              const soruSayisiLabel = document.querySelector('#soru-sayisi-grup label[for="soru-sayisi"]');
+              const gorunurlukTarihiInput = document.getElementById('gorunurluk-tarihi');
+              const gorunurlukSaatiInput = document.getElementById('gorunurluk-saati');
+              
+              // --- Görüntüleme Elementleri ---
+              const goruntulemeOgrenciListesi = document.getElementById('goruntuleme-ogrenci-listesi');
+              const seciliOgrenciAdiElement = document.getElementById('secili-ogrenci-adi');
+              const odevListesiMesaj = document.getElementById('odev-listesi-mesaj');
+              const odevTablosuWrapper = document.querySelector('.odev-tablosu-wrapper');
+              const odevTablosuBody = document.getElementById('odev-tablosu-body').querySelector('tbody');
+              const odevListesiBos = document.getElementById('odev-listesi-bos');
 
-            const progressModal = document.getElementById('student-progress-modal');
-            const deleteModal = document.getElementById('delete-student-modal');
-            const sidebar = document.getElementById('sidebar');
-            const toast = document.getElementById('toast');
-            let toastTimeout;
 
-            // --- UTILITY FUNCTIONS ---
-            const showToast = (message, type = 'error') => {
-                clearTimeout(toastTimeout);
-                toast.textContent = message;
-                toast.className = `px-6 py-3 rounded-lg shadow-2xl font-semibold ${type === 'error' ? 'bg-red-500 text-white' : 'bg-green-500 text-white'}`;
-                toast.classList.add('show');
-                toastTimeout = setTimeout(() => toast.classList.remove('show'), 4000);
-            };
+              // --- Form Başlatma ---
+              initAssignForm(odevForm, assignButton, formMessageDiv, assignLoading, ogrenciListesiKonteyner, kategoriSelect, soruSayisiGrup, soruSayisiInput, soruSayisiLabel, gorunurlukTarihiInput, gorunurlukSaatiInput);
+              
+              // --- Görüntüleme Bölümü Başlatma ---
+              initViewAssignments(goruntulemeOgrenciListesi, seciliOgrenciAdiElement, odevListesiMesaj, odevTablosuWrapper, odevTablosuBody, odevListesiBos);
+         });
 
-            const toggleButtonLoading = (btn, isLoading) => {
-                btn.disabled = isLoading;
-                if (isLoading) btn.classList.add('btn-loading');
-                else btn.classList.remove('btn-loading');
-            };
+        // ===========================================
+        // BÖLÜM 1: YENİ ÖDEV ATAMA FONKSİYONLARI
+        // ===========================================
+        function initAssignForm(odevForm, assignButton, formMessageDiv, assignLoading, ogrenciListesiKonteyner, kategoriSelect, soruSayisiGrup, soruSayisiInput, soruSayisiLabel, gorunurlukTarihiInput, gorunurlukSaatiInput) {
+             if (!odevForm) { console.error("Ödev formu bulunamadı!"); return; }
 
-            const switchTab = (hash) => {
-                document.querySelectorAll('.sidebar-link').forEach(link => link.classList.toggle('active', link.hash === hash));
-                document.querySelectorAll('.tab-content').forEach(content => content.classList.toggle('active', content.id === hash.substring(1)));
-                if (window.innerWidth < 768) sidebar.classList.add('-translate-x-full');
-            };
+             // Öğrencileri forma yükle
+             ogrencileriYukle(ogrenciListesiKonteyner, 'form'); 
 
-            // --- DATA FETCHING & RENDERING ---
-            const fetchDataAndRender = async () => {
-                const [studentSnapshot, programSnapshot, progressSnapshot] = await Promise.all([
-                    getDocs(query(studentsCol, orderBy("name"))),
-                    getDocs(query(programsCol, orderBy("createdAt", "desc"))),
-                    getDocs(progressCol)
-                ]);
+             // Kategori seçimine göre Soru Sayısı/Metin Sayısı label'ını ayarla
+             kategoriSelect.addEventListener('change', (e) => handleKategoriChange(e, soruSayisiLabel, soruSayisiInput, soruSayisiGrup));
+             kategoriSelect.dispatchEvent(new Event('change')); // İlk yüklemede çalıştır
 
-                studentList = studentSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+             // Form gönderildiğinde ödevi ata
+             odevForm.addEventListener('submit', (e) => handleOdevSubmit(e, ogrenciListesiKonteyner, kategoriSelect, soruSayisiInput, gorunurlukTarihiInput, gorunurlukSaatiInput, assignButton, assignLoading, formMessageDiv, odevForm));
+        }
 
-                allPrograms = {};
-                studentList.forEach(s => allPrograms[s.id] = []);
-                programSnapshot.forEach(doc => {
-                    const program = { id: doc.id, ...doc.data() };
-                    if (allPrograms[program.studentId]) {
-                        allPrograms[program.studentId].push(program);
-                    }
-                });
+        async function ogrencileriYukle(container, type = 'form') { // type: 'form' or 'view'
+            const loadingElementId = type === 'form' ? 'ogrenci-loading-form' : 'ogrenci-loading-view';
+            const loadingP = document.getElementById(loadingElementId);
+            if (!container) return; 
+            
+            if(loadingP) container.innerHTML = loadingP.outerHTML; // Yükleniyor... yazısını göster
+            else container.innerHTML = '<p>Öğrenciler yükleniyor...</p>';
 
-                allProgress = {};
-                progressSnapshot.forEach(doc => { allProgress[doc.id] = doc.data().tasks || {}; });
+            try {
+                const kullanicilarRef = collection(db, "kullanicilar");
+                 const q = query(kullanicilarRef, orderBy("isim", "asc"));
+                const querySnapshot = await getDocs(q);
+                container.innerHTML = ''; // Temizle
 
-                renderAllTabs();
-            };
-
-            const renderAllTabs = () => {
-                renderDashboard();
-                renderStudents();
-                renderProgramCreator();
-            };
-
-            onSnapshot(studentsCol, fetchDataAndRender);
-            onSnapshot(programsCol, fetchDataAndRender);
-            onSnapshot(progressCol, fetchDataAndRender);
-
-            // --- EVENT LISTENERS ---
-            document.getElementById('open-sidebar-btn').addEventListener('click', () => sidebar.classList.remove('-translate-x-full'));
-            document.getElementById('close-sidebar-btn').addEventListener('click', () => sidebar.classList.add('-translate-x-full'));
-            document.getElementById('close-progress-modal').addEventListener('click', () => progressModal.classList.add('hidden'));
-            document.getElementById('cancel-delete-student').addEventListener('click', () => deleteModal.classList.add('hidden'));
-            document.querySelectorAll('.sidebar-link').forEach(link => link.addEventListener('click', e => { e.preventDefault(); window.location.hash = e.currentTarget.hash; switchTab(e.currentTarget.hash); }));
-
-            // --- RENDER FUNCTIONS ---
-            function renderDashboard() {
-                 const statsContainer = document.getElementById('stats-container');
-                 const progressContainer = document.getElementById('student-progress-container');
-
-                 const totalStudents = studentList.length;
-                 let totalPrograms = 0;
-                 let totalCompletedTasks = 0;
-                 let totalTasks = 0;
-
-                 Object.values(allPrograms).flat().forEach(program => {
-                    totalPrograms++;
-                    const progress = allProgress[program.id] || {};
-                    totalTasks += program.tasks.length;
-                    totalCompletedTasks += Object.values(progress).filter(Boolean).length;
-                 });
-                 const overallCompletion = totalTasks > 0 ? Math.round((totalCompletedTasks / totalTasks) * 100) : 0;
-
-                 statsContainer.innerHTML = `
-                    <div class="bg-slate-800 p-5 rounded-lg border border-slate-700"><p class="text-sm text-slate-400">Toplam Öğrenci</p><p class="text-3xl font-bold text-white">${totalStudents}</p></div>
-                    <div class="bg-slate-800 p-5 rounded-lg border border-slate-700"><p class="text-sm text-slate-400">Atanan Program</p><p class="text-3xl font-bold text-white">${totalPrograms}</p></div>
-                    <div class="bg-slate-800 p-5 rounded-lg border border-slate-700"><p class="text-sm text-slate-400">Genel Tamamlama</p><p class="text-3xl font-bold text-green-400">${overallCompletion}%</p></div>
-                 `;
-                 
-                 if (studentList.length === 0) {
-                     progressContainer.innerHTML = `<p class="text-center text-slate-400 py-4">İlerleme verisi gösterecek öğrenci bulunmuyor.</p>`;
-                     return;
+                if (querySnapshot.empty) {
+                     container.innerHTML = '<p>Sistemde kayıtlı öğrenci bulunamadı.</p>';
+                } else {
+                     querySnapshot.forEach(doc => {
+                         const ogrenci = doc.data();
+                         const ogrenciId = doc.id;
+                         const ogrenciAdi = `${ogrenci.isim || ''} ${ogrenci.soyisim || ''}`.trim() || ogrenci.email || ogrenciId;
+                         
+                         if(type === 'form') { // Form için radio butonlu label
+                              const radioId = `ogrenci-${ogrenciId}`;
+                              const label = document.createElement('label');
+                              label.htmlFor = radioId;
+                              label.textContent = ogrenciAdi;
+                              label.dataset.uid = ogrenciId;
+                              const radioInput = document.createElement('input');
+                              radioInput.type = 'radio'; radioInput.id = radioId;
+                              radioInput.name = 'ogrenci-radio'; radioInput.value = ogrenciId;
+                              radioInput.dataset.name = ogrenciAdi;
+                              radioInput.addEventListener('change', (e) => {
+                                   container.querySelectorAll('label.selected').forEach(lbl => lbl.classList.remove('selected'));
+                                   if (e.target.checked && e.target.closest('label')) {
+                                       e.target.closest('label').classList.add('selected');
+                                   }
+                              });
+                              label.prepend(radioInput);
+                              container.appendChild(label);
+                         } else { // Görüntüleme için tıklanabilir div
+                              const div = document.createElement('div');
+                              div.classList.add('ogrenci-list-item');
+                              div.textContent = ogrenciAdi;
+                              div.dataset.uid = ogrenciId;
+                              div.dataset.name = ogrenciAdi; // İsmi sakla
+                              div.addEventListener('click', handleOgrenciSecim);
+                              container.appendChild(div);
+                         }
+                     });
                  }
-
-                 progressContainer.innerHTML = studentList.map(student => {
-                     const studentPrograms = allPrograms[student.id];
-                     if (!studentPrograms || studentPrograms.length === 0) return '';
-                     const latestProgram = studentPrograms[0];
-                     const progress = allProgress[latestProgram.id] || {};
-                     const completed = Object.values(progress).filter(Boolean).length;
-                     const total = latestProgram.tasks.length;
-                     const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
-                     return `
-                        <div>
-                            <div class="flex justify-between items-center mb-1">
-                                <p class="font-semibold text-slate-200">${student.name}</p>
-                                <p class="text-sm font-medium text-indigo-400">${percentage}%</p>
-                            </div>
-                            <div class="w-full bg-slate-700 rounded-full h-2.5"><div class="bg-indigo-600 h-2.5 rounded-full" style="width: ${percentage}%"></div></div>
-                        </div>
-                     `;
-                 }).join('');
+            } catch (error) {
+                 console.error(`${type} için öğrenciler yüklenirken hata:`, error);
+                 container.innerHTML = `<p style="color: red;">Öğrenciler yüklenirken bir hata oluştu.</p>`;
+            } finally {
+                 // Yükleniyor yazısını gizle (artık container temizlendiği için gerek yok gibi ama kalsın)
+                 const loadingElem = document.getElementById(loadingElementId);
+                 if(loadingElem) loadingElem.style.display = 'none';
             }
+        }
+
+        function handleKategoriChange(e, soruSayisiLabel, soruSayisiInput, soruSayisiGrup) {
+            const secilenKategori = e.target.value;
+            if (readingKategorileri.includes(secilenKategori)) {
+                soruSayisiLabel.textContent = 'Metin Sayısı (Reading)';
+                soruSayisiInput.placeholder = 'Örn: 5';
+            } else {
+                soruSayisiLabel.textContent = 'Soru Sayısı';
+                soruSayisiInput.placeholder = 'Örn: 25';
+            }
+            soruSayisiGrup.style.display = 'block';
+            soruSayisiInput.required = true;
+        }
+
+        async function handleOdevSubmit(e, ogrenciListesiKonteyner, kategoriSelect, soruSayisiInput, gorunurlukTarihiInput, gorunurlukSaatiInput, assignButton, assignLoading, formMessageDiv, odevForm) {
+            e.preventDefault();
+            const selectedOgrenciRadio = ogrenciListesiKonteyner.querySelector('input[name="ogrenci-radio"]:checked');
+            const odevBaslikInput = document.getElementById('odev-baslik');
+            const kategori = kategoriSelect.value;
             
-            function renderStudents() {
-                const tableBody = document.getElementById('students-table-body');
-                const cardView = document.getElementById('students-card-view');
+            if (!selectedOgrenciRadio || !kategori) { return showMessage("Lütfen öğrenci ve kategori seçin.", "error"); }
 
-                if (studentList.length === 0) {
-                    const noStudentHTML = `<tr><td colspan="3" class="text-center text-slate-500 py-10">Listenizde hiç öğrenci yok.</td></tr>`;
-                    tableBody.innerHTML = noStudentHTML;
-                    cardView.innerHTML = `<div class="text-center text-slate-500 py-10">Listenizde hiç öğrenci yok.</div>`;
-                    return;
-                }
-
-                let tableHTML = '';
-                let cardHTML = '';
-
-                studentList.forEach(student => {
-                    const programs = allPrograms[student.id];
-                    const latestProgram = (programs && programs.length > 0) ? programs[0] : null;
-                    let progressText = 'Program atanmadı';
-                    if (latestProgram) {
-                        const progress = allProgress[latestProgram.id] || {};
-                        const completed = Object.values(progress).filter(Boolean).length;
-                        progressText = `${completed} / ${latestProgram.tasks.length} Görev (${latestProgram.week})`;
-                    }
-
-                    const actionsHTML = `
-                        <button data-student-id="${student.id}" class="assign-program-btn text-indigo-400 hover:text-indigo-300 p-1 font-semibold">Ata</button>
-                        <button data-student-id="${student.id}" data-student-name="${student.name}" class="delete-student-btn text-red-500 hover:text-red-400 p-1 font-semibold">Sil</button>
-                    `;
-                    
-                    tableHTML += `<tr class="hover:bg-slate-800">
-                        <td class="px-6 py-4"><button class="text-left w-full view-progress-btn" data-student-id="${student.id}">
-                            <div class="font-medium text-indigo-400 hover:text-indigo-300">${student.name}</div>
-                            <div class="text-sm text-slate-400">${student.email}</div>
-                        </button></td>
-                        <td class="px-6 py-4 text-sm text-slate-300">${progressText}</td>
-                        <td class="px-6 py-4 text-right">${actionsHTML}</td>
-                    </tr>`;
-                    
-                    cardHTML += `<div class="bg-slate-800 p-4 rounded-lg border border-slate-700">
-                        <button class="text-left w-full view-progress-btn mb-3" data-student-id="${student.id}">
-                            <p class="font-bold text-lg text-indigo-400">${student.name}</p>
-                            <p class="text-sm text-slate-400">${student.email}</p>
-                        </button>
-                        <div class="border-t border-slate-700 pt-3 flex justify-between items-center">
-                            <p class="text-sm text-slate-300">${progressText}</p>
-                            <div class="space-x-2">${actionsHTML}</div>
-                        </div>
-                    </div>`;
-                });
-
-                tableBody.innerHTML = tableHTML;
-                cardView.innerHTML = cardHTML;
-                attachStudentActionListeners();
+            const soruSayisi = parseInt(soruSayisiInput.value);
+            if (isNaN(soruSayisi) || soruSayisi <= 0) {
+                const isReading = readingKategorileri.includes(kategori);
+                return showMessage(isReading ? "Geçerli metin sayısı girin." : "Geçerli soru sayısı girin.", "error");
             }
 
-            function attachStudentActionListeners() {
-                 document.querySelectorAll('.assign-program-btn').forEach(btn => btn.addEventListener('click', e => {
-                    e.stopPropagation();
-                    document.getElementById('student-select').value = e.target.dataset.studentId;
-                    window.location.hash = '#program-olustur'; switchTab('#program-olustur');
-                    showToast('Öğrenci program oluşturma sayfasına seçildi.', 'success');
-                }));
-                document.querySelectorAll('.delete-student-btn').forEach(btn => btn.addEventListener('click', e => {
-                    e.stopPropagation();
-                    deleteModal.dataset.studentId = e.target.dataset.studentId;
-                    document.getElementById('student-name-to-delete').textContent = e.target.dataset.studentName;
-                    deleteModal.classList.remove('hidden');
-                }));
-                document.querySelectorAll('.view-progress-btn').forEach(btn => btn.addEventListener('click', e => {
-                    showStudentProgress(e.currentTarget.dataset.studentId);
-                }));
+            // Zamanlama Hesaplama
+            const tarihValue = gorunurlukTarihiInput.value;
+            const saatValue = gorunurlukSaatiInput.value;
+            let gorunurlukZamani = serverTimestamp(); // Varsayılan: şimdi
+            let durum = "atanmis";
+            let isZamanlanmis = false;
+
+            if (tarihValue && saatValue) {
+                 try {
+                      const secilenTimestamp = new Date(`${tarihValue}T${saatValue}:00`).getTime();
+                      if (isNaN(secilenTimestamp)) throw new Error("Invalid Date");
+                      if (secilenTimestamp > Date.now()) {
+                           gorunurlukZamani = Timestamp.fromDate(new Date(secilenTimestamp));
+                           durum = "zamanlanmis"; isZamanlanmis = true;
+                           console.log("Ödev zamanlandı:", gorunurlukZamani.toDate());
+                      }
+                 } catch (err) { return showMessage("Geçersiz tarih/saat.", "error"); }
             }
 
-            function showStudentProgress(studentId) {
-                const student = studentList.find(s => s.id === studentId);
-                const programs = allPrograms[studentId] || [];
-                document.getElementById('modal-student-name').textContent = `${student.name} - Program Geçmişi`;
-                const detailsContainer = document.getElementById('modal-program-details');
+            const ogrenciId = selectedOgrenciRadio.value;
+            const baslik = odevBaslikInput.value.trim() || `${kategoriSelect.options[kategoriSelect.selectedIndex].text} Ödevi`;
 
-                if (programs.length === 0) {
-                    detailsContainer.innerHTML = '<p class="text-slate-400 text-center p-4">Bu öğrenciye henüz bir program atanmamış.</p>';
-                    progressModal.classList.remove('hidden');
-                    return;
-                }
-                
-                detailsContainer.innerHTML = programs.map(program => {
-                    const progressData = allProgress[program.id] || {};
-                    const completed = Object.values(progressData).filter(Boolean).length;
-                    const total = program.tasks.length;
-                    const percentage = total > 0 ? Math.round((completed/total)*100) : 0;
+             assignButton.disabled = true; assignLoading.style.display = 'inline'; formMessageDiv.style.display = 'none';
 
-                    return `<div class="mb-6 bg-slate-700/50 p-4 rounded-lg">
-                        <div class="flex justify-between items-center mb-3">
-                            <h4 class="font-bold text-lg text-indigo-400">${program.week}</h4>
-                            <span class="text-sm font-semibold">${completed}/${total} (${percentage}%)</span>
-                        </div>
-                        <div class="space-y-2 text-sm">${program.tasks.map(task => {
-                            const isCompleted = progressData[task.title] === true;
-                            return `<div class="task-item ${isCompleted ? 'completed' : ''} flex items-center justify-between p-2 rounded bg-slate-700">
-                                <div class="flex items-center">
-                                    <svg class="w-5 h-5 mr-3 flex-shrink-0 ${isCompleted ? 'text-green-400' : 'text-slate-500'}" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>
-                                    <span>${task.title}</span>
-                                </div>
-                                <span class="text-xs text-slate-400">${task.questions} Soru - ${task.source}</span>
-                            </div>`;
-                        }).join('')}</div>
-                        ${program.generalNotes ? `<div class="mt-3 text-sm border-t border-slate-600 pt-3 text-slate-300 whitespace-pre-wrap">${program.generalNotes}</div>` : ''}
-                    </div>`;
-                }).join('');
-                progressModal.classList.remove('hidden');
+             try {
+                 const odevData = {
+                     baslik: baslik, kategori: kategori, soruSayisi: soruSayisi,
+                     atanmaTarihi: serverTimestamp(), gorunurlukTarihi: gorunurlukZamani, durum: durum,
+                     ...(readingKategorileri.includes(kategori) && { cozulenMetinler: [] }) 
+                 };
+                 const gorevlerRef = collection(db, "odevler", ogrenciId, "gorevler");
+                 await addDoc(gorevlerRef, odevData);
+
+                 const mesaj = isZamanlanmis ? `Ödev zamanlandı.` : `Ödev atandı.`;
+                 showMessage(`${mesaj} (${selectedOgrenciRadio.dataset.name})`, "success");
+                 odevForm.reset();
+                 kategoriSelect.dispatchEvent(new Event('change'));
+                 ogrenciListesiKonteyner.querySelectorAll('label.selected').forEach(lbl => lbl.classList.remove('selected'));
+             } catch (error) {
+                 console.error("Ödev atama hatası:", error);
+                 showMessage("Ödev atanırken bir hata oluştu.", "error");
+             } finally {
+                 assignButton.disabled = false; assignLoading.style.display = 'none';
+             }
+        }
+
+        // ===========================================
+        // BÖLÜM 2: ÖDEV GÖRÜNTÜLEME FONKSİYONLARI
+        // ===========================================
+        function initViewAssignments(goruntulemeOgrenciListesi, seciliOgrenciAdiElement, odevListesiMesaj, odevTablosuWrapper, odevTablosuBody, odevListesiBos) {
+             if (!goruntulemeOgrenciListesi) { console.error("Öğrenci listesi (görüntüleme) bulunamadı!"); return; }
+             // Öğrencileri görüntüleme listesine yükle
+             ogrencileriYukle(goruntulemeOgrenciListesi, 'view');
+        }
+
+        // Öğrenci listesinden birine tıklandığında çalışır
+        function handleOgrenciSecim(e) {
+             const selectedDiv = e.currentTarget;
+             seciliOgrenciId = selectedDiv.dataset.uid;
+             const seciliAd = selectedDiv.dataset.name;
+
+             // Seçili öğrenciyi görsel olarak işaretle
+             document.querySelectorAll('#goruntuleme-ogrenci-listesi .ogrenci-list-item').forEach(item => {
+                  item.classList.remove('selected');
+             });
+             selectedDiv.classList.add('selected');
+
+             // Ödevleri yükle
+             ogrenciOdevleriniYukle(seciliOgrenciId, seciliAd);
+        }
+
+        async function ogrenciOdevleriniYukle(ogrenciId, ogrenciAdi) {
+            const seciliOgrenciAdiElement = document.getElementById('secili-ogrenci-adi');
+            const odevListesiMesaj = document.getElementById('odev-listesi-mesaj');
+            const odevTablosuWrapper = document.querySelector('.odev-tablosu-wrapper');
+            const odevTablosuBody = document.getElementById('odev-tablosu-body').querySelector('tbody');
+            const odevListesiBos = document.getElementById('odev-listesi-bos');
+
+            if (!ogrenciId || !odevTablosuBody || !seciliOgrenciAdiElement || !odevListesiMesaj || !odevTablosuWrapper || !odevListesiBos) {
+                 console.error("Ödev listesi elemanları bulunamadı.");
+                 return;
             }
 
-            const confirmDeleteBtn = document.getElementById('confirm-delete-student');
-            confirmDeleteBtn.addEventListener('click', async () => {
-                const studentIdToDelete = deleteModal.dataset.studentId;
-                if (!studentIdToDelete) return;
-                
-                toggleButtonLoading(confirmDeleteBtn, true);
-                try {
-                    const batch = writeBatch(db);
-                    batch.delete(doc(studentsCol, studentIdToDelete));
+            seciliOgrenciAdiElement.textContent = `${ogrenciAdi} - Ödevleri`;
+            odevListesiMesaj.textContent = 'Ödevler yükleniyor...';
+            odevListesiMesaj.style.display = 'block';
+            odevTablosuWrapper.style.display = 'none';
+            odevListesiBos.style.display = 'none';
+            odevTablosuBody.innerHTML = ''; // Önceki listeyi temizle
 
-                    const q = query(programsCol, where("studentId", "==", studentIdToDelete));
-                    const programsSnapshot = await getDocs(q);
+            try {
+                const odevlerRef = collection(db, "odevler", ogrenciId, "gorevler");
+                const q = query(odevlerRef, orderBy("atanmaTarihi", "desc"));
+                const querySnapshot = await getDocs(q);
 
-                    programsSnapshot.forEach(programDoc => {
-                        batch.delete(programDoc.ref);
-                        batch.delete(doc(progressCol, programDoc.id));
-                    });
-
-                    await batch.commit();
-                    showToast('Öğrenci ve tüm verileri başarıyla silindi.', 'success');
-                } catch (error) {
-                    console.error("Deletion error:", error);
-                    showToast('Silme işlemi sırasında bir hata oluştu.');
-                } finally {
-                    toggleButtonLoading(confirmDeleteBtn, false);
-                    deleteModal.classList.add('hidden');
+                if (querySnapshot.empty) {
+                     odevListesiMesaj.style.display = 'none';
+                     odevListesiBos.style.display = 'block';
+                } else {
+                     querySnapshot.forEach(doc => {
+                          odevTablosuBody.appendChild(odevSatiriOlustur(doc.id, doc.data()));
+                     });
+                     odevListesiMesaj.style.display = 'none';
+                     odevTablosuWrapper.style.display = 'block';
+                     // Yeni yüklenen satırlar için event listenerları ata
+                     attachAssignmentActionListeners(ogrenciId); 
                 }
-            });
+            } catch (error) {
+                console.error(`Öğrenci (${ogrenciId}) ödevleri yüklenirken hata:`, error);
+                odevListesiMesaj.textContent = 'Ödevler yüklenirken bir hata oluştu.';
+                odevListesiMesaj.style.color = 'red';
+                odevTablosuWrapper.style.display = 'none';
+                odevListesiBos.style.display = 'none';
+            }
+        }
 
-            // --- PROGRAM CREATOR ---
-            const tasksDef = [{id:'vocabulary',title:'Vocabulary'},{id:'grammar',title:'Grammar'},{id:'cloze-test',title:'Cloze Test'},{id:'sentence-completion',title:'Sentence Completion'},{id:'paragraph-completion',title:'Paragraph Completion'},{id:'paragraph-test',title:'Paragraph Test'},{id:'situation',title:'Situation'},{id:'dialogue',title:'Dialogue'},{id:'translation',title:'Translation'},{id:'irrelevant-sentence',title:'Anlam Bütünlüğü'},{id:'paraphrasing',title:'Paraphrasing'}];
+        // Tek bir ödev satırını (<tr>) oluşturan fonksiyon
+        function odevSatiriOlustur(odevId, odevData) {
+            const tr = document.createElement('tr');
+            tr.dataset.odevid = odevId; // Satıra ID ekle
+
+            const kategoriAdi = (odevData.kategori || '?').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            const baslik = odevData.baslik || 'Başlıksız Ödev';
             
-            function renderProgramCreator() {
-                document.getElementById('student-select').innerHTML = '<option value="" selected disabled>Öğrenci seçin...</option>' + studentList.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
-                const creatorContainer = document.getElementById('tasks-creator-container');
-                
-                creatorContainer.innerHTML = tasksDef.map(t => `
-                    <div class="bg-slate-700/50 p-4 rounded-lg border border-slate-700 flex flex-col gap-3">
-                        <label class="font-semibold text-slate-200">${t.title}</label>
-                        <div class="grid grid-cols-2 gap-2">
-                            <input type="number" id="${t.id}-q" class="w-full bg-slate-700 text-sm p-2 rounded-md border border-slate-600 placeholder-slate-400" placeholder="Soru Sayısı">
-                            <input type="text" id="${t.id}-s" class="w-full bg-slate-700 text-sm p-2 rounded-md border border-slate-600 placeholder-slate-400" placeholder="Kaynak">
-                        </div>
-                    </div>
-                `).join('');
+            // Durum Etiketi
+            let durumText = '?';
+            let durumClass = '';
+            let tarihText = '';
+            const simdi = new Date();
+            const gorunurlukZamani = odevData.gorunurlukTarihi?.toDate();
+
+            if (odevData.durum === 'tamamlandi') {
+                 durumText = 'Tamamlandı'; durumClass = 'tamamlandi';
+                 tarihText = odevData.tamamlanmaTarihi?.toDate() ? `Tamamlandı: ${dateFormatter.format(odevData.tamamlanmaTarihi.toDate())}` : `Atandı: ${dateFormatter.format(odevData.atanmaTarihi.toDate())}`;
+            } else if (odevData.durum === 'zamanlanmis' && gorunurlukZamani > simdi) {
+                 durumText = 'Zamanlandı'; durumClass = 'zamanlanmis';
+                 tarihText = `Görünür: ${dateTimeFormatter.format(gorunurlukZamani)}`;
+            } else { // atanmis veya zamanı gelmiş zamanlanmış
+                 durumText = 'Atanmış'; durumClass = 'atanmis';
+                 tarihText = `Atandı: ${dateFormatter.format(odevData.atanmaTarihi.toDate())}`;
             }
 
-            const sendProgramBtn = document.getElementById('send-program-btn');
-            sendProgramBtn.addEventListener('click', async () => {
-                const studentId = document.getElementById('student-select').value;
-                const week = document.getElementById('week-input').value;
-                if (!studentId) return showToast('Lütfen bir öğrenci seçin!');
-                if (!week) return showToast('Lütfen program haftasını belirtin!');
+            // Sonuç
+            let sonucText = '-';
+            if (odevData.durum === 'tamamlandi' && odevData.sonuc) {
+                 let net = parseFloat(odevData.sonuc.netSayisi);
+                 sonucText = !isNaN(net) && isFinite(net) ? net.toFixed(2) : '-';
+            }
 
-                const student = studentList.find(s => s.id === studentId);
-                const programTasks = tasksDef
-                    .map(t => ({ title: t.title, questions: document.getElementById(`${t.id}-q`).value || '0', source: document.getElementById(`${t.id}-s`).value || 'Belirtilmedi' }))
-                    .filter(t => t.questions !== '0' && t.questions !== '');
+            tr.innerHTML = `
+                <td>${baslik}</td>
+                <td>${kategoriAdi}</td>
+                <td><span class="status-badge ${durumClass}">${durumText}</span></td>
+                <td>${tarihText}</td>
+                <td>${sonucText}</td>
+                <td class="actions">
+                    <button class="edit-btn" title="Başlığı Düzenle" data-odevid="${odevId}" data-current-title="${baslik}">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pencil-fill" viewBox="0 0 16 16"><path d="M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708zm.646 6.061L9.793 2.5 3.293 9H3.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.207l6.5-6.5zm-7.468 7.468A.5.5 0 0 1 6 13.5V13h-.5a.5.5 0 0 1-.5-.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.5-.5V10h-.5a.5.5 0 0 1-.175-.032l-.179.178a.5.5 0 0 0-.11.168l-2 5a.5.5 0 0 0 .65.65l5-2a.5.5 0 0 0 .168-.11z"/></svg>
+                    </button>
+                    <button class="delete-btn" title="Ödevi Sil" data-odevid="${odevId}">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash3-fill" viewBox="0 0 16 16"><path d="M11 1.5v1h3.5a.5.5 0 0 1 0 1h-.538l-.853 10.66A2 2 0 0 1 11.115 16h-6.23a2 2 0 0 1-1.994-1.84L2.038 3.5H1.5a.5.5 0 0 1 0-1H5v-1A1.5 1.5 0 0 1 6.5 0h3A1.5 1.5 0 0 1 11 1.5m-5 0v1h4v-1a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5M4.5 5.029l.5 8.5a.5.5 0 1 0 .998-.06l-.5-8.5a.5.5 0 1 0-.998.06m6.53-.528a.5.5 0 0 0-.528.47l-.5 8.5a.5.5 0 0 0 .998.058l.5-8.5a.5.5 0 0 0-.47-.528M8 4.5a.5.5 0 0 0-.5.5v8.5a.5.5 0 0 0 1 0V5a.5.5 0 0 0-.5-.5"/></svg>
+                    </button>
+                </td>
+            `;
+            return tr;
+        }
 
-                if(programTasks.length === 0) return showToast('Lütfen en az bir görev için soru sayısı girin.');
+        // Ödev listesindeki Düzenle ve Sil butonlarına listener ekler
+        function attachAssignmentActionListeners(studentId) {
+             const tableBody = document.getElementById('odev-tablosu-body')?.querySelector('tbody');
+             if (!tableBody) return;
 
-                const programData = {
-                    studentId, studentName: student.name,
-                    week,
-                    generalNotes: document.getElementById('general-notes').value,
-                    tasks: programTasks,
-                    createdAt: Timestamp.now()
-                };
-                
-                toggleButtonLoading(sendProgramBtn, true);
-                try {
-                    const newProgramRef = doc(collection(db, "programs"));
-                    await setDoc(newProgramRef, programData);
-                    showToast(`${student.name} için program başarıyla gönderildi!`, 'success');
-                    // Reset form
-                    document.getElementById('week-input').value = '';
-                    document.getElementById('general-notes').value = '';
-                    tasksDef.forEach(t => {
-                        document.getElementById(`${t.id}-q`).value = '';
-                        document.getElementById(`${t.id}-s`).value = '';
-                    });
-                    window.location.hash = '#ozet'; switchTab('#ozet');
-                } catch (error) {
-                    console.error("Program sending error:", error);
-                    showToast('Program gönderilirken bir hata oluştu.');
-                } finally {
-                    toggleButtonLoading(sendProgramBtn, false);
-                }
-            });
+             // Sil Butonları
+             tableBody.querySelectorAll('.delete-btn').forEach(button => {
+                 // CloneNode ile eski listenerları temizle
+                 const newButton = button.cloneNode(true);
+                 button.parentNode.replaceChild(newButton, button);
+                 newButton.addEventListener('click', (e) => {
+                     const odevId = e.currentTarget.dataset.odevid;
+                     showOnayPopup('Bu ödevi silmek istediğinize emin misiniz?', () => {
+                         odeviSil(studentId, odevId); // Öğrenci ID'sini de gönder
+                     });
+                 });
+             });
 
-            // --- INITIALIZATION ---
-            switchTab(window.location.hash || '#ozet');
-        });
+             // Düzenle Butonları
+             tableBody.querySelectorAll('.edit-btn').forEach(button => {
+                 const newButton = button.cloneNode(true);
+                 button.parentNode.replaceChild(newButton, button);
+                 newButton.addEventListener('click', (e) => {
+                     const odevId = e.currentTarget.dataset.odevid;
+                     const currentTitle = e.currentTarget.dataset.currentTitle;
+                     const yeniBaslik = prompt("Yeni ödev başlığını girin:", currentTitle);
+                     if (yeniBaslik !== null && yeniBaslik.trim() !== '') {
+                          odevBasliginiGuncelle(studentId, odevId, yeniBaslik.trim());
+                     } else if (yeniBaslik === '') {
+                          alert("Başlık boş olamaz.");
+                     }
+                 });
+             });
+        }
+        
+        // Ödev başlığını güncelleyen fonksiyon
+        async function odevBasliginiGuncelle(studentId, odevId, yeniBaslik) {
+             if (!studentId || !odevId || !yeniBaslik) return;
+             const odevRef = doc(db, "odevler", studentId, "gorevler", odevId);
+             try {
+                 await updateDoc(odevRef, { baslik: yeniBaslik });
+                 console.log(`Ödev (${odevId}) başlığı güncellendi.`);
+                 // Listeyi yeniden yükle (veya sadece ilgili satırı güncelle)
+                 const studentName = document.querySelector(`#goruntuleme-ogrenci-listesi .ogrenci-list-item[data-uid="${studentId}"]`)?.dataset.name || '';
+                 ogrenciOdevleriniYukle(studentId, studentName);
+                 showMessage('Ödev başlığı güncellendi.', 'success');
+             } catch (error) {
+                 console.error("Başlık güncellenirken hata:", error);
+                 showMessage('Başlık güncellenirken bir hata oluştu.', 'error');
+             }
+        }
+        
+        // Ödevi silme fonksiyonu (öğrenci ID'si eklendi)
+        async function odeviSil(studentId, odevId) {
+            if (!studentId || !odevId) return alert("Silme hatası: ID eksik.");
+            
+            const odevRef = doc(db, "odevler", studentId, "gorevler", odevId);
+            try {
+                await deleteDoc(odevRef);
+                console.log(`Öğrenci (${studentId}) Ödevi (${odevId}) silindi.`);
+                // Listeyi yeniden yükle
+                const studentName = document.querySelector(`#goruntuleme-ogrenci-listesi .ogrenci-list-item[data-uid="${studentId}"]`)?.dataset.name || '';
+                ogrenciOdevleriniYukle(studentId, studentName); 
+                 showMessage('Ödev başarıyla silindi.', 'success');
+            } catch (error) {
+                console.error("Ödev silinirken hata:", error);
+                showMessage('Ödev silinirken bir hata oluştu.', 'error');
+            }
+        }
+
+        // --- Yardımcı Fonksiyonlar ---
+        function showMessage(message, type = "info") {
+            const messageDiv = document.getElementById('form-message'); // Sadece formdaki mesaj alanı hedefleniyor
+            if (!messageDiv) { console.warn("Mesaj alanı bulunamadı."); return; }
+            messageDiv.textContent = message;
+            messageDiv.className = `message ${type}`;
+            messageDiv.style.display = 'block';
+            setTimeout(() => {
+                if (messageDiv.textContent === message) { messageDiv.style.display = 'none'; }
+            }, 5000);
+        }
+
+        function showOnayPopup(mesaj, callback) {
+             const popup = document.getElementById('onay-popup');
+             if (!popup) return; 
+             popup.querySelector('#onay-mesaji').innerHTML = mesaj;
+             popup.classList.add('show');
+             const iptalBtn = popup.querySelector('#onay-iptal-btn');
+             const devamBtn = popup.querySelector('#onay-devam-btn');
+             const newDevamBtn = devamBtn.cloneNode(true);
+             devamBtn.parentNode.replaceChild(newDevamBtn, devamBtn);
+             const newIptalBtn = iptalBtn.cloneNode(true);
+             iptalBtn.parentNode.replaceChild(newIptalBtn, iptalBtn);
+             const devamListener = () => { popup.classList.remove('show'); callback(); };
+             const iptalListener = () => { popup.classList.remove('show'); };
+             newDevamBtn.addEventListener('click', devamListener, { once: true });
+             newIptalBtn.addEventListener('click', iptalListener, { once: true });
+         }
+
     </script>
 </body>
 </html>
